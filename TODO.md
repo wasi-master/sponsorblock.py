@@ -1,6 +1,6 @@
 # Things to do
 
-- [-] Add support for getting segments
+- [x] Add support for getting segments
 - [ ] Add support for adding segments
 - [ ] Add support for voting segments
 - [ ] Add support for getting user information
