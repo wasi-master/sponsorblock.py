@@ -10,7 +10,7 @@
   <h2 align="center">sponsorblock.py</h2>
 
   <p align="center">
-    An pylint extension for linting discord.py
+    A wrapper for the SponsorBlock API
     <br />
     <a href="https://wasi-master.github.io/sponsorblock.py/"><strong>Explore the docs »</strong></a>
     <br />
