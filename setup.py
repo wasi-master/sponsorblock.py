@@ -11,10 +11,10 @@ setuptools.setup(
     description="An unofficial wrapper for the SponsorBlock API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://wasi-master.github.io/sponsorblock/",
+    url="https://wasi-master.github.io/sponsorblock.py/",
     project_urls={
-        "Github": "https://github.com/wasi-master/sponsorblock",
-        "Bug Tracker": "https://github.com/wasi-master/sponsorblock/issues",
+        "Github": "https://github.com/wasi-master/sponsorblock.py",
+        "Bug Tracker": "https://github.com/wasi-master/sponsorblock.py/issues",
         "Documentation": "https://sponsorblockpy.readthedocs.io/en/latest/",
         "Say Thanks": "https://saythanks.io/to/arianmollik323@gmail.com",
     },
@@ -26,7 +26,6 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "Natural Language :: English",
         "Topic :: Internet"
-
     ],
     keywords="sponsorblock.py documentation sponsorblock python wrapper",
     packages=["sponsorblock"],
