@@ -15,7 +15,7 @@ setuptools.setup(
     project_urls={
         "Github": "https://github.com/wasi-master/sponsorblock",
         "Bug Tracker": "https://github.com/wasi-master/sponsorblock/issues",
-        "Documentation": "https://sponsorblock.readthedocs.io",
+        "Documentation": "https://sponsorblockpy.readthedocs.io/en/latest/",
         "Say Thanks": "https://saythanks.io/to/arianmollik323@gmail.com",
     },
     license="MIT",

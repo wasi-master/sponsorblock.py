@@ -12,7 +12,7 @@
   <p align="center">
     A wrapper for the SponsorBlock API
     <br />
-    <a href="https://wasi-master.github.io/sponsorblock.py/"><strong>Explore the docs »</strong></a>
+    <a href="https://sponsorblockpy.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/wasi-master/sponsorblock.py/blob/main/demo.md">View Demo</a>
@@ -121,7 +121,7 @@ You'll need to have [python](https://www.python.org) installed in order to use t
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-See the [documentation](https://sponsorblock.readthedocs.io/)
+See the [documentation](https://sponsorblockpy.readthedocs.io/en/latest/)
 
 ## Roadmap
 
