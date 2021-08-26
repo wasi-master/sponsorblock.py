@@ -26,6 +26,10 @@ class Segment:
         The action_type of the segment, by default None
     data : Optional[dict], optional
         The raw data that was used to create the segment, can be None if the segment was created manually
+
+    Note
+    ----
+    While creating your own instance you should only pass the category, start and end time. The other attributes won't do anything
     """
 
     def __init__(
@@ -71,6 +75,10 @@ class Segment:
         -------
         Segment
             The segment object gotten form the data.
+
+        Warning
+        -------
+        This should not be used manually, this is for the library
         """
         category = data["category"]
         start, end = data["segment"]
@@ -113,6 +121,10 @@ class User:
         Whether the user is a VIP
     last_segment_id : str
         The id of the last segment created by the user
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
     """
 
     def __init__(self, data: dict):
@@ -152,6 +164,10 @@ class TopUser:
         The total number of submissions the user has made
     minutes_saved : float
         The amount of time the user has saved
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
     """
 
     def __init__(
@@ -190,6 +206,10 @@ class TotalStats:
         The total number of submissions
     minutes_saved
         The total amount of time saved
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
     """
 
     def __init__(self, data):
@@ -243,6 +263,10 @@ class SegmentInfo:
         The hashed video id of the video
     user_agent : str
         The user agent of the segment
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
     """
 
     def __init__(self, data):
@@ -284,6 +308,10 @@ class SearchedUser:
         The name of the user
     id : str
         The id of the user
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
     """
 
     def __init__(self, data):
