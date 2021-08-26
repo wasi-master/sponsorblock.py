@@ -13,18 +13,22 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://wasi-master.github.io/sponsorblock/",
     project_urls={
+        "Github": "https://github.com/wasi-master/sponsorblock",
         "Bug Tracker": "https://github.com/wasi-master/sponsorblock/issues",
-        'Source': 'https://github.com/wasi-master/sponsorblock',
-        'Documentation': 'https://wasi-master.github.io/sponsorblock/',
-        'Say Thanks':'https://saythanks.io/to/arianmollik323@gmail.com'
+        "Documentation": "https://sponsorblock.readthedocs.io",
+        "Say Thanks": "https://saythanks.io/to/arianmollik323@gmail.com",
     },
     license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "Topic :: Internet"
+
     ],
     packages=["sponsorblock"],
     python_requires=">=3.6",
-    install_requires=["requests", "aiohttp"],
+    install_requires=["requests"],
 )
