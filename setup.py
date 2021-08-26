@@ -28,6 +28,7 @@ setuptools.setup(
         "Topic :: Internet"
 
     ],
+    keywords="sponsorblock.py documentation sponsorblock python wrapper",
     packages=["sponsorblock"],
     python_requires=">=3.6",
     install_requires=["requests"],
