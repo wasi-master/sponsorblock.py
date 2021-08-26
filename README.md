@@ -35,6 +35,7 @@
    <a href="https://pypistats.org/packages/sponsorblock.py"><img src="https://img.shields.io/pypi/dw/sponsorblock.py.svg?style=flat" alt="Downloads last Week"></a>
    <a href="https://pypistats.org/packages/sponsorblock.py"><img src="https://img.shields.io/pypi/dd/sponsorblock.py.svg?style=flat" alt="Downloads last Day"></a>
    <a href="https://pypi.org/project/sponsorblock.py/#history"><img src="https://img.shields.io/pypi/v/sponsorblock.py.svg" alt="Version"></a>
+   <a href='https://sponsorblockpy.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/sponsorblockpy/badge/?version=latest' alt='Documentation Status' /></a>
    <a href="https://github.com/wasi-master/sponsorblock.py/actions/workflows/python-app.yml"><img src="https://img.shields.io/github/workflow/status/wasi-master/sponsorblock.py/Python%20application.svg?label=tests" alt="Tests"></a>
    <a href="https://github.com/wasi-master/sponsorblock.py/actions/workflows/python-publish.yml"><img src="https://img.shields.io/github/workflow/status/wasi-master/sponsorblock.py/Upload%20Python%20Package.svg?label=build" alt="Build"></a>
    <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black"></a>
