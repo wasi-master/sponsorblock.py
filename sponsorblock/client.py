@@ -18,7 +18,7 @@ from .errors import (
     UnexpectedException,
 )
 from .models import SearchedUser, Segment, SegmentInfo, TopUser, TotalStats, User
-from .utils import ALL_CATEGORIES, VIDEO_ID_REGEX, Category, SortType, set_env_var
+from .utils import ALL_CATEGORIES, VIDEO_ID_REGEX, Category, SortType, set_env_var, cache
 
 
 class Client:
@@ -68,6 +68,7 @@ class Client:
         self.debug = debug
         self.default_categories = default_categories or ALL_CATEGORIES
 
+    @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
         self,
         video_id: str,
@@ -373,6 +374,7 @@ class Client:
             else:
                 raise UnexpectedException("Unexpected response from server", response)
 
+    @cache(ttl=900)  # 15 minutes
     def get_user_info(self, public_userid: str = None) -> User:
         """Gets the user info for the current user.
 
@@ -468,6 +470,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(ttl=60)  # a minute
     def get_views_for_user(self):
         """Gets the view count for the current user.
 
@@ -519,6 +522,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(ttl=60)  # a minute
     def get_saved_time_for_user(self):
         """Gets the view count for the current user.
 
@@ -609,6 +613,7 @@ class Client:
             else:
                 raise UnexpectedException("Unexpected response from server", response)
 
+    @cache(ttl=60)  # a minute
     def get_user_name(self) -> str:
         """Gets the user name for the current user.
 
@@ -664,6 +669,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(ttl=3600)  # a minute
     def get_top_users(self, sort_type: SortType) -> List[TopUser]:
         """Gets the top users.
 
@@ -746,6 +752,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(ttl=60)  # a minute
     def get_total_stats(self, count_contributing_users: bool = False) -> TotalStats:
         """Gets total stats for the api
 
@@ -807,6 +814,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(ttl=60)  # a minute
     def get_saved_days_formatted(self) -> float:
         """Returns the amount of days that have been saved.
 
@@ -852,6 +860,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(max_entries=300)  # 5 minutes
     def get_segment_info(
         self,
         segment: Union[Segment, str] = None,
@@ -954,6 +963,7 @@ class Client:
                         "Unexpected response from server", response
                     )
 
+    @cache(max_entries=300)  # 5 minutes
     def search_for_user(
         self, user_name: str, exact: bool = False
     ) -> List[SearchedUser]:

@@ -21,7 +21,7 @@
 ## Qualify of Life improvements
 
 - [ ] Add utils for tabular printing
-- [ ] Use [expiringdict](https://pypi.org/project/expiringdict/) to cache stuff like top users
+- [ ] Use functools.ttl to cache stuff like top users
 - [ ] Add async client
 
 ## Documentation
