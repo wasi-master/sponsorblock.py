@@ -124,6 +124,9 @@ You'll need to have [python](https://www.python.org) installed in order to use t
 
 See the [documentation](https://sponsorblockpy.readthedocs.io/en/latest/)
 
+There is also a cli that you can use to get segments from the command line (beta).\
+To use that run `sponsorblock video_id` and pass your desired video_id
+
 ## Roadmap
 
 See the [todo list](https://github.com/wasi-master/sponsorblock.py/blob/main/TODO.md) for a list of features yet to be added and features already added.

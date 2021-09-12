@@ -29,6 +29,9 @@ setuptools.setup(
     ],
     keywords="sponsorblock.py documentation sponsorblock python wrapper",
     packages=["sponsorblock"],
+    entry_points={
+        "console_scripts": ["sponsorblock=sponsorblock.__main__:run"],
+    },
     python_requires=">=3.6",
     install_requires=["requests"],
 )
