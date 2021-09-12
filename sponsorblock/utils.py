@@ -99,7 +99,7 @@ def cache(**kwargs):
                             del function.cache[next(iter(function.cache))]
                 function.cache[args] = {
                     "result": function(*args),
-                    "expiry": datetime.max if "ttl" not in kwargs else datetime.now() + kwargs["ttl"],
+                    "expiry": datetime.max if "ttl" not in kwargs else datetime.now() + timedelta(seconds=kwargs["ttl"]),
                 }
 
             # answer from cache
