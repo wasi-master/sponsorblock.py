@@ -33,6 +33,7 @@ class Client:
         debug: bool = False,
         no_env: bool = False,
         default_categories: List[str] = None,
+        hashed_video_id_length: int = 4,
     ):
 
         """A client for making requests to the sponsorblock server.
@@ -49,6 +50,9 @@ class Client:
             Whether to not store the current user_id in a environment variable, by default False
         default_categories : List[str], optional
             The default categories to use, by default [sponsor, selfpromo, interaction, intro, outro, preview, music_offtopic]
+        hashed_video_id_length : int, optional
+            The length of the hashed video id to send to the sponsorblock api, by default 4 (recommended).
+            The video ids are hashed to implement a K-Anonymity system (https://github.com/ajayyy/SponsorBlock/wiki/K-Anonymity)
 
         Warning
         -------
@@ -68,6 +72,7 @@ class Client:
                 set_env_var("SPONSORBLOCK_USER_ID", user_id)
         self.debug = debug
         self.default_categories = default_categories or ALL_CATEGORIES
+        self.hash_length = hashed_video_id_length
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
@@ -144,13 +149,13 @@ class Client:
             "requiredSegments": required_segments or [],
             "service": service,
         }
-        url = self.base_url + "/api/skipSegments/"  + sha256(video_id.encode('ascii')).hexdigest()[:32]
+        url = self.base_url + "/api/skipSegments/"  + sha256(video_id.encode('ascii')).hexdigest()[self.hash_length]
         response = requests.get(url, params=parameters)
         try:
             data = json.loads(response.text)
             for video in data:
                 if video["videoID"] == video_id:
-                    data = video
+                    data = video['segments']
                     break
             else:
                 raise BadRequest("Your inputs are wrong/impossible", response)
@@ -159,7 +164,7 @@ class Client:
                 "The server returned invalid JSON", response
             ) from exc
         else:
-            return [Segment.from_dict(d) for d in data['segments']]
+            return [Segment.from_dict(d) for d in data]
         finally:
             code = response.status_code
             if code != 200:
