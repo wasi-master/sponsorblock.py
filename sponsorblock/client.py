@@ -3,6 +3,7 @@ import json
 import os
 import secrets
 from datetime import timedelta
+from hashlib import sha256
 from typing import List, Union
 
 import requests
@@ -139,21 +140,26 @@ class Client:
         if category:
             categories = [category]
         parameters = {
-            "videoID": video_id,
             "category": categories or self.default_categories,
             "requiredSegments": required_segments or [],
             "service": service,
         }
-        url = self.base_url + "/api/skipSegments"
+        url = self.base_url + "/api/skipSegments/"  + sha256(video_id.encode('ascii')).hexdigest()[:32]
         response = requests.get(url, params=parameters)
         try:
             data = json.loads(response.text)
+            for video in data:
+                if video["videoID"] == video_id:
+                    data = video
+                    break
+            else:
+                raise BadRequest("Your inputs are wrong/impossible", response)
         except json.JSONDecodeError as exc:
             raise InvalidJSONException(
                 "The server returned invalid JSON", response
             ) from exc
         else:
-            return [Segment.from_dict(data) for data in data]
+            return [Segment.from_dict(d) for d in data['segments']]
         finally:
             code = response.status_code
             if code != 200:
