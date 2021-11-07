@@ -30,7 +30,7 @@
    <a href="https://github.com/wasi-master/sponsorblock.py/issues"><img src="https://img.shields.io/github/issues/wasi-master/sponsorblock.py.svg?style=flat" alt="Issues"></a>
    <a href="https://github.com/wasi-master/sponsorblock.py"><img src="https://img.shields.io/github/languages/code-size/wasi-master/sponsorblock.py.svg?style=flat" alt="Code Size"></a>
    <a href="https://github.com/wasi-master/sponsorblock.py/blob/master/LICENSE"><img src="https://img.shields.io/github/license/wasi-master/sponsorblock.py.svg?style=flat" alt="MIT License"></a>
-   <a href="https://saythanks.io/to/arianmollik323@gmail.com"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="Say Thanke"></a>
+   <a href="https://saythanks.io/to/wasi-master"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="Say Thanke"></a>
    <a href="https://pypistats.org/packages/sponsorblock.py"><img src="https://img.shields.io/pypi/dm/sponsorblock.py.svg?style=flat" alt="Downloads last Month"></a>
    <a href="https://pypistats.org/packages/sponsorblock.py"><img src="https://img.shields.io/pypi/dw/sponsorblock.py.svg?style=flat" alt="Downloads last Week"></a>
    <a href="https://pypistats.org/packages/sponsorblock.py"><img src="https://img.shields.io/pypi/dd/sponsorblock.py.svg?style=flat" alt="Downloads last Day"></a>

@@ -16,7 +16,7 @@ setuptools.setup(
         "Github": "https://github.com/wasi-master/sponsorblock.py",
         "Bug Tracker": "https://github.com/wasi-master/sponsorblock.py/issues",
         "Documentation": "https://sponsorblockpy.readthedocs.io/en/latest/",
-        "Say Thanks": "https://saythanks.io/to/arianmollik323@gmail.com",
+        "Say Thanks": "https://saythanks.io/to/wasi-master",
     },
     license="MIT",
     classifiers=[
@@ -25,7 +25,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
         "Natural Language :: English",
-        "Topic :: Internet"
+        "Topic :: Internet",
     ],
     keywords="sponsorblock.py documentation sponsorblock python wrapper",
     packages=["sponsorblock"],
