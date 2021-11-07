@@ -15,7 +15,6 @@ author = "Wasi Master"  # pylint: disable=invalid-name
 # The full version, including alpha/beta/rc tags
 release = "0.1.0"  # pylint: disable=invalid-name
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -26,13 +25,13 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
-    "sphinx.ext.autosectionlabel"
+    "sphinx.ext.autosectionlabel",
 ]
 
 autodoc_member_order = "bysource"  # pylint: disable=invalid-name
-autoclass_content = 'both'
+autoclass_content = "both"
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
-html_title = 'Welcome to sponsorblock.py'
+html_title = "Welcome to sponsorblock.py"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
