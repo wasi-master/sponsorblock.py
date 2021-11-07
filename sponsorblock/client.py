@@ -52,7 +52,8 @@ class Client:
             The default categories to use, by default [sponsor, selfpromo, interaction, intro, outro, preview, music_offtopic]
         hashed_video_id_length : int, optional
             The length of the hashed video id to send to the sponsorblock api, by default 4 (recommended).
-            The video ids are hashed to implement a K-Anonymity system (https://github.com/ajayyy/SponsorBlock/wiki/K-Anonymity)
+            The video ids are hashed to implement a K-Anonymity system (https://github.com/ajayyy/SponsorBlock/wiki/K-Anonymity).
+            The value can be 4 (recommended) to 32. A higher value would mean faster response times, but it's just a few nanoseconds
 
         Warning
         -------
