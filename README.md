@@ -4,7 +4,7 @@
 <br/>
 <p align="center">
   <a href="https://github.com/wasi-master/sponsorblock.py">
-    <img src="https://raw.githubusercontent.com/wasi-master/sponsorblock.py/main/images/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/wasi-master/sponsorblock.py/main/images/logo.png" alt="Logo" width="200" height="200">
   </a>
 
   <h2 align="center">sponsorblock.py</h2>
