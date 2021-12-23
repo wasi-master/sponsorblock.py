@@ -21,7 +21,7 @@
 ## Qualify of Life improvements
 
 - [ ] Add utils for tabular printing
-- [ ] Use functools.ttl to cache stuff like top users
+- [x] Use functools.ttl to cache stuff like top users
 - [ ] Add async client
 
 ## Documentation
@@ -33,4 +33,4 @@
 
 ## Miscellaneous
 
-- [ ] Make a logo
+- [x] Make a logo
