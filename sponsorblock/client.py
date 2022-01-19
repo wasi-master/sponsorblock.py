@@ -19,10 +19,19 @@ from .errors import (
     UnexpectedException,
 )
 from .models import SearchedUser, Segment, SegmentInfo, TopUser, TotalStats, User
-from .utils import ALL_CATEGORIES, VIDEO_ID_REGEX, Category, SortType, set_env_var, cache
+from .utils import (
+    ALL_CATEGORIES,
+    VIDEO_ID_REGEX,
+    Category,
+    SortType,
+    set_env_var,
+    cache,
+    Singleton,
+    __version__,
+)
 
 
-class Client:
+class Client(metaclass=Singleton):
     """A client for making requests to the sponsorblock server."""
 
     def __init__(
@@ -34,6 +43,7 @@ class Client:
         no_env: bool = False,
         default_categories: List[str] = None,
         hashed_video_id_length: int = 4,
+        session: requests.Session = None,
     ):
 
         """A client for making requests to the sponsorblock server.
@@ -51,9 +61,9 @@ class Client:
         default_categories : List[str], optional
             The default categories to use, by default [sponsor, selfpromo, interaction, intro, outro, preview, music_offtopic]
         hashed_video_id_length : int, optional
-            The length of the hashed video id to send to the sponsorblock api, by default 4 (recommended).
-            The video ids are hashed to implement a K-Anonymity system (https://github.com/ajayyy/SponsorBlock/wiki/K-Anonymity).
-            The value can be 4 (recommended) to 32. A higher value would mean faster response times, but it's just a few nanoseconds
+            The length of the hashed video id to use for K-Anonymity, by default 4
+        session : requests.Session, optional
+            The session to use for requests, by default a new session
 
         Warning
         -------
@@ -74,6 +84,7 @@ class Client:
         self.debug = debug
         self.default_categories = default_categories or ALL_CATEGORIES
         self.hash_length = hashed_video_id_length
+        self.session = session or requests.Session()
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
@@ -92,13 +103,13 @@ class Client:
         video_id : str
             The id of the video to get the skip segments for, can be a video url too.
         category : str
-            A category to get skip segments for. See https://github.com/ajayyy/SponsorBlock/wiki/Types#category
+            A category to get skip segments for. See https://wiki.sponsor.ajay.app/w/Types
         categories : List[str]
-            A list of categories to get the skip segments for. See https://github.com/ajayyy/SponsorBlock/wiki/Types#category
+            A list of categories to get the skip segments for. See https://wiki.sponsor.ajay.app/w/Types
         required_segments : List[str]
             A list of segment UUIDs to require be retrieved, even if they don't meet the minimum vote threshold.
         service : str
-            The service to use, default is 'YouTube'. See https://github.com/ajayyy/SponsorBlock/wiki/Types#service.
+            The service to use, default is 'YouTube'. See https://wiki.sponsor.ajay.app/w/Types#service.
 
         Returns
         -------
@@ -129,7 +140,8 @@ class Client:
         [
             Segment(category=music_offtopic, start=0, end=21.808434, uuid=728cbf1743f4b5230ee4a9c7b254e316aa90720ec35297b17aaf6d23907c1a83, duration=0:00:21.808434, action_type=skip),
             Segment(category=music_offtopic, start=249.6543, end=281.521, uuid=ae38abe70c63b093eaeb1c2c437aa3275856646c326ee23b5ff70dcb4190c92f, duration=0:00:31.866700, action_type=skip),
-            Segment(category=outro, start=274.674, end=281.521, uuid=cd335e7f406df63e460b4b02db71cc57344529d381bb9fc482960f338ff4ae37, duration=0:00:06.847000, action_type=skip)
+            Segment(category=outro, start=274.674, end=281.521, uuid=cd335e7f406df63e460b4b02db71cc57344529d381bb9fc482960f338ff4ae37, duration=0:00:06.847000, action_type=skip),
+            Segment(category=poi_highlight, start=27.949, end=27.949, uuid=5e560eec60e99a8f0a5056816800c32bb8c86ff06d4b57cece8f7be5504a1077e, duration=0:00:00, action_type=skip)
         ]
         >>> segments[0].category
         'music_offtopic'
@@ -149,17 +161,133 @@ class Client:
             "category": categories or self.default_categories,
             "requiredSegments": required_segments or [],
             "service": service,
+            "videoID": video_id,
         }
-        url = self.base_url + "/api/skipSegments/"  + sha256(video_id.encode('ascii')).hexdigest()[self.hash_length]
-        response = requests.get(url, params=parameters)
+        url = self.base_url + "/api/skipSegments/"
+        response = self.session.get(url, params=parameters)
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return [Segment.from_dict(d) for d in data]
+        finally:
+            code = response.status_code
+            if code != 200:
+                if code == 400:
+                    raise BadRequest("Your inputs are wrong/impossible", response)
+                if code == 404:
+                    raise NotFoundException("Not Found", response)
+                if code > 500:
+                    raise ServerException("Server Error", response)
+                else:
+                    raise UnexpectedException(
+                        "Unexpected response from server", response
+                    )
+
+    @cache(ttl=300)  # 5 minutes
+    def get_skip_segments_with_hash(
+        self,
+        video_id: str ,
+        video_hash: str = None,
+        *,
+        category: Category = None,
+        categories: List[str] = None,
+        required_segments: List[str] = None,
+        service: str = "YouTube",
+    ) -> List[Segment]:
+        """Gets the skip segments for a given video using a K-Anonymity system.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to get the skip segments for, can be a video url too.
+        video_hash : str
+            The sha256 hash of the id of the video to get the skip segments for, if not given uses video_id to generate a hash with the length 32.
+            The video ids are hashed to implement a K-Anonymity system (https://github.com/ajayyy/SponsorBlock/wiki/K-Anonymity).
+            The length can be from 4 (recommended) to 32. A higher value would mean faster response times, but it's just a few nanoseconds
+        category : str
+            A category to get skip segments for. See https://wiki.sponsor.ajay.app/w/Types
+        categories : List[str]
+            A list of categories to get the skip segments for. See https://wiki.sponsor.ajay.app/w/Types
+        required_segments : List[str]
+            A list of segment UUIDs to require be retrieved, even if they don't meet the minimum vote threshold.
+        service : str
+            The service to use, default is 'YouTube'. See https://wiki.sponsor.ajay.app/w/Types#service.
+
+
+        Returns
+        -------
+        List[Segment]
+            A list of segments of the video
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        NotFoundException
+            The server returned a 404 error, most likely because the video id is invalid
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 404, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> segments = client.get_skip_segments_with_hash("f1d9e193c3a58e59468eb88b50929d80")
+        >>> segments
+        [
+            Segment(category=music_offtopic, start=0, end=21.808434, uuid=728cbf1743f4b5230ee4a9c7b254e316aa90720ec35297b17aaf6d23907c1a83, duration=0:00:21.808434, action_type=skip),
+            Segment(category=music_offtopic, start=249.49852, end=281.521, uuid=3d78f759477445f70f04063df12523038eff3928c6a99c11e7cdd3bd9a51311f, duration=0:00:32.022480, action_type=skip),
+            Segment(category=outro, start=274.674, end=281.521, uuid=cd335e7f406df63e460b4b02db71cc57344529d381bb9fc482960f338ff4ae37, duration=0:00:06.847000, action_type=skip),
+            Segment(category=poi_highlight, start=27.949, end=27.949, uuid=5e560eec60e99a8f0a5056816800c32bb8c86ff06d4b57cece8f7be5504a1077e, duration=0:00:00, action_type=skip)
+        ]
+        >>> segments[0].category
+        'music_offtopic'
+        >>> segments[1].start, segments[1].end
+        (249.6543, 281.521)
+        >>> segments[2].duration.seconds
+        6
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        if video_hash and not 4 < len(video_hash) < 33:
+            raise TypeError(
+                "Video hash length wrong. must be between 4 and 32, got {}".format(
+                    len(video_hash)
+                )
+            )
+        if category:
+            categories = [category]
+        parameters = {
+            "category": categories or self.default_categories,
+            "requiredSegments": required_segments or [],
+            "service": service,
+        }
+        url =  self.base_url + "/api/skipSegments/" + (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32])
+        response = self.session.get(url, params=parameters)
         try:
             data = json.loads(response.text)
             for video in data:
                 if video["videoID"] == video_id:
-                    data = video['segments']
+                    data = video["segments"]
                     break
             else:
-                raise BadRequest("Your inputs are wrong/impossible", response)
+                print([video["videoID"] for video in data])
+                raise BadRequest(
+                    "No video returned from server with the specified hash", response
+                )
         except json.JSONDecodeError as exc:
             raise InvalidJSONException(
                 "The server returned invalid JSON", response
@@ -199,7 +327,7 @@ class Client:
         segments : List[Segment]
             The list of skip segments to add
         service : str
-            The service to use, default is 'YouTube'. See https://github.com/ajayyy/SponsorBlock/wiki/Types#service.
+            The service to use, default is 'YouTube'. See https://wiki.sponsor.ajay.app/w/Types#service.
 
         Raises
         ------
@@ -260,7 +388,7 @@ class Client:
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = requests.post(url, data=body)
+        response = self.session.post(url, data=body)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -338,7 +466,7 @@ class Client:
             parameters["category"] = category
 
         url = self.base_url + "/api/voteOnSponsorTime"
-        response = requests.post(url, data=parameters)
+        response = self.session.post(url, data=parameters)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -376,7 +504,7 @@ class Client:
         """
         parameters = {"UUID": uuid.uuid if isinstance(uuid, Segment) else uuid}
         url = self.base_url + "/api/viewedVideoSponsorTime"
-        response = requests.post(url, params=parameters)
+        response = self.session.post(url, params=parameters)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -458,7 +586,7 @@ class Client:
             params = {"publicUserID": public_userid}
 
         url = self.base_url + "/api/userInfo"
-        response = requests.get(url, params=params)
+        response = self.session.get(url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -512,7 +640,7 @@ class Client:
         params = {"userID": self.user_id}
 
         url = self.base_url + "/api/getViewsForUser"
-        response = requests.get(url, params=params)
+        response = self.session.get(url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -564,7 +692,7 @@ class Client:
         params = {"userID": self.user_id}
 
         url = self.base_url + "/api/getSavedTimeForUser"
-        response = requests.get(url, params=params)
+        response = self.session.get(url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -615,7 +743,7 @@ class Client:
         }
 
         url = self.base_url + "/api/setUsername"
-        response = requests.post(url, data=parameters)
+        response = self.session.post(url, data=parameters)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -657,7 +785,7 @@ class Client:
 
         params = {"userID": self.user_id}
         url = self.base_url + "/api/getUsername"
-        response = requests.get(url, params=params)
+        response = self.session.get(url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -734,7 +862,7 @@ class Client:
             else sort_type
         }
         url = self.base_url + "/api/getTopUsers"
-        response = requests.get(url, params=params)
+        response = self.session.get(url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -806,7 +934,7 @@ class Client:
         """
         parameters = {"countContributingUsers": count_contributing_users}
         url = self.base_url + "/api/getTotalStats"
-        response = requests.get(url, params=parameters)
+        response = self.session.get(url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -852,7 +980,7 @@ class Client:
         132654.20
         """
         url = self.base_url + "/api/getDaysSavedFormatted"
-        response = requests.get(url)
+        response = self.session.get(url)
 
         try:
             data = json.loads(response.text)
@@ -933,8 +1061,8 @@ class Client:
             ),
             ... (more segments)
         ]
-        >>> segment_infos[2].time_submitted.day
-        3
+        >>> segment_infos[0].time_submitted.day
+        16
         """
         if segment is None and segments is []:
             raise ValueError("At least one segment is required")
@@ -948,7 +1076,7 @@ class Client:
             ]
         }
         url = self.base_url + "/api/segmentInfo"
-        response = requests.get(url, params=parameters)
+        response = self.session.get(url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1018,7 +1146,7 @@ class Client:
         """
         parameters = {"username": user_name, "exact": exact}
         url = self.base_url + "/api/userID"
-        response = requests.get(url, params=parameters)
+        response = self.session.get(url, params=parameters)
 
         try:
             data = json.loads(response.text)

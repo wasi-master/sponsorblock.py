@@ -1,7 +1,7 @@
 import operator
 from datetime import datetime, timedelta
 from functools import reduce
-from typing import Optional
+from typing import Optional, Union
 
 from .utils import Category
 
@@ -35,8 +35,8 @@ class Segment:
     def __init__(
         self,
         category: Category,
-        start: float,
-        end: float,
+        start: Union[float, timedelta],
+        end: Union[float, timedelta],
         uuid: Optional[str] = None,
         duration: Optional[timedelta] = None,
         action_type: Optional[str] = None,
@@ -49,9 +49,9 @@ class Segment:
         ----------
         category : Category
             The category of the segment
-        start : float
+        start : float, timedelta
             The start time of the segment
-        end : float
+        end : float, timedelta
             The end time of the segment
         """
         self.category = category

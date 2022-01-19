@@ -2,15 +2,18 @@
 
 import sys
 from datetime import timedelta
+from typing import Dict, Tuple
 import sponsorblock
 
 try:
     import rich
     from rich.text import Text
+
     RICH_INSTALLED = True
 except ImportError:
     print("Consider installing rich for better output with colors and stuff")
     RICH_INSTALLED = False
+
 
 def run():
     try:
@@ -20,16 +23,18 @@ def run():
         sys.exit(1)
 
     client = sponsorblock.Client()
-    COLORS = {
+    COLORS: Dict[str, Tuple[str, str]] = {
         "sponsor": ("Sponsor", "green"),
-        "selfpromo":("Unpaid/Self Promotion","yellow"),
-        "interaction":("Interaction Reminder","purple"),
-        "intro":("Intermission/Intro Animation","cyan"),
-        "outro":("Endcards/Credits","blue"),
-        "preview":("Preview/Recap","light_sky_blue1"),
-        "music_offtopic":("Music: Non-Music Section","orange1")
+        "selfpromo": ("Unpaid/Self Promotion", "yellow"),
+        "interaction": ("Interaction Reminder", "magenta1"),
+        "intro": ("Intermission/Intro Animation", "cyan"),
+        "outro": ("Endcards/Credits", "blue"),
+        "preview": ("Preview/Recap", "light_sky_blue1"),
+        "music_offtopic": ("Music: Non-Music Section", "orange1"),
+        "poi_highlight": ("Point of Interest", "red"),
+        "filler": ("Filler", "purple3"),
+        "preview": ("Preview/Recap", "sky_blue3"),
     }
-
 
     segments = client.get_skip_segments(video_id)
 
@@ -41,7 +46,7 @@ def run():
                     f"Segment #{num} ({name}):\n"
                     f"\tStart: {str(timedelta(seconds=int(segment.start)))}\n"
                     f"\tEnd: {str(timedelta(seconds=int(segment.end)))}",
-                    style=color
+                    style=color,
                 )
             )
         else:
@@ -50,6 +55,7 @@ def run():
                 f"\tStart: {str(timedelta(seconds=int(segment.start)))}\n"
                 f"\tEnd: {str(timedelta(seconds=int(segment.end)))}"
             )
+
 
 if __name__ == "__main__":
     run()

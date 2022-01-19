@@ -2,7 +2,7 @@ import os
 import platform
 import re
 from enum import Enum
-from typing import Literal
+from typing import Dict, Literal
 from datetime import datetime, timedelta
 
 VIDEO_ID_REGEX = re.compile(
@@ -17,6 +17,7 @@ ALL_CATEGORIES = [
     "preview",
     "music_offtopic",
     "poi_highlight",
+    "filler",
 ]
 Category = Literal[
     "sponsor",
@@ -27,8 +28,9 @@ Category = Literal[
     "preview",
     "music_offtopic",
     "poi_highlight",
+    "filler",
 ]
-
+__version__ = "0.2.0"
 
 class SortType(Enum):
     """0 for by minutes saved, 1 for by view count, 2 for by total submissions
@@ -75,6 +77,7 @@ def cache(**kwargs):
     max_entries : int
         The maximum number of entries to store in the cache..
     """
+
     def decorator(function):
         # static function variable for cache, lazy initialization
         try:
@@ -84,7 +87,10 @@ def cache(**kwargs):
 
         def wrapper(*args):
             # if nothing valid in cache, insert something
-            if not args in function.cache or datetime.now() > function.cache[args]["expiry"]:
+            if (
+                not args in function.cache
+                or datetime.now() > function.cache[args]["expiry"]
+            ):
                 if "max_entries" in kwargs:
                     max_entries = kwargs["max_entries"]
                     if max_entries is not None and len(function.cache) >= max_entries:
@@ -99,7 +105,9 @@ def cache(**kwargs):
                             del function.cache[next(iter(function.cache))]
                 function.cache[args] = {
                     "result": function(*args),
-                    "expiry": datetime.max if "ttl" not in kwargs else datetime.now() + timedelta(seconds=kwargs["ttl"]),
+                    "expiry": datetime.max
+                    if "ttl" not in kwargs
+                    else datetime.now() + timedelta(seconds=kwargs["ttl"]),
                 }
 
             # answer from cache
@@ -108,3 +116,11 @@ def cache(**kwargs):
         return wrapper
 
     return decorator
+
+
+class Singleton(type):
+    _instances_instances: Dict['Singleton', 'Singleton'] = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

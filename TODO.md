@@ -3,6 +3,7 @@
 ## API Releated
 
 - [x] Add support for getting segments
+- [x] Add support for getting segments with hash
 - [x] Add support for adding segments
 - [x] Add support for voting segments
 - [x] Add support for posting skipped segments
