@@ -119,7 +119,7 @@ def cache(**kwargs):
 
 
 class Singleton(type):
-    _instances_instances: Dict['Singleton', 'Singleton'] = {}
+    _instances: Dict['Singleton', 'Singleton'] = {}
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
