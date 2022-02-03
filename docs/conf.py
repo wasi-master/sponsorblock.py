@@ -13,7 +13,7 @@ copyright = "2021, Wasi Master"  # pylint: disable=redefined-builtin,invalid-nam
 author = "Wasi Master"  # pylint: disable=invalid-name
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"  # pylint: disable=invalid-name
+release = "0.2.1"  # pylint: disable=invalid-name
 
 # -- General configuration ---------------------------------------------------
 

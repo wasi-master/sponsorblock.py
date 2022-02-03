@@ -30,7 +30,7 @@ Category = Literal[
     "poi_highlight",
     "filler",
 ]
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 class SortType(Enum):
     """0 for by minutes saved, 1 for by view count, 2 for by total submissions
