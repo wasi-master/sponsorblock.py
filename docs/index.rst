@@ -10,6 +10,8 @@ Welcome to sponsorblock.py's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   api_reference.rst
 
 
 sponsorblock.py is a easy to use, fast, and powerful wrapper around the sponsorblock api
