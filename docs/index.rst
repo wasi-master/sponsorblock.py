@@ -10,8 +10,6 @@ Welcome to sponsorblock.py's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   
-   api_reference.rst
 
    api_reference
 
