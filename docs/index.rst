@@ -13,6 +13,8 @@ Welcome to sponsorblock.py's documentation!
    
    api_reference.rst
 
+   api_reference
+
 
 sponsorblock.py is a easy to use, fast, and powerful wrapper around the sponsorblock api
 
@@ -34,7 +36,7 @@ Example of getting the segments of a video using sponsorblock.py
 >>> segments[2].duration.seconds
 6
 
-For more information, see API Reference
+For more information, see :ref:`API Reference <api_reference>`
 
 There is also a cli that you can use to get segments from the command line (beta).
 To use that run `sponsorblock video_id` and pass your desired video_id

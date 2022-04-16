@@ -356,7 +356,7 @@ class Client(metaclass=Singleton):
         >>> import sponsorblock as sb
         >>> client = sb.Client()
         >>> client.add_skip_segments(
-                https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+                "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
                 segment=sb.Segment(category="music_offtopic", start=0, end=21.808434, action_type="skip")
             )
         """

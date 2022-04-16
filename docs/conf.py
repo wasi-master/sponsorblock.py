@@ -26,6 +26,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
+    "sphinx_copybutton",
 ]
 
 autodoc_member_order = "bysource"  # pylint: disable=invalid-name
