@@ -2,8 +2,12 @@ import os
 import platform
 import re
 from enum import Enum
-from typing import Dict, Literal
 from datetime import datetime, timedelta
+try:
+    from typing import Dict, Literal
+except ImportError:
+    from typing import Dict
+    from typing_extensions import Literal
 
 VIDEO_ID_REGEX = re.compile(
     r"(.+?)(\/)(watch\x3Fv=)?(embed\/watch\x3Ffeature\=player_embedded\x26v=)?([a-zA-Z0-9_-]{11})+"
@@ -59,6 +63,7 @@ def set_env_var(key: str, value: str):
     -------
     Most of the time this shouldn't be used manually, but it's here in case you need to set the SPONSORBLOCK_USER_ID environment variable.
     """
+    print("Setting SPONSORBLOCK_USER_ID environment variable")
     operating_system = platform.system()
     if operating_system == "Windows":
         os.system(f'setx {key} "{value}" ')
