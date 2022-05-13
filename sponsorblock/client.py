@@ -388,7 +388,7 @@ class Client(metaclass=Singleton):
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = self.session.post(url, data=body)
+        response = self.session.post(url, json=body)
         code = response.status_code
         if code != 200:
             if code == 400:
