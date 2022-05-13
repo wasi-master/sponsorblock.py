@@ -176,8 +176,7 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest(
-                        "Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible", response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
@@ -275,8 +274,11 @@ class Client(metaclass=Singleton):
             "requiredSegments": required_segments or [],
             "service": service,
         }
-        url = self.base_url + "/api/skipSegments/" + \
-            (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32])
+        url = (
+            self.base_url
+            + "/api/skipSegments/"
+            + (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32])
+        )
         response = self.session.get(url, params=parameters)
         try:
             data = json.loads(response.text)
@@ -299,8 +301,7 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest(
-                        "Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible", response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
@@ -406,8 +407,7 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException(
-                    "Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server", response)
 
     def vote_skip_segment(
         self,
@@ -479,8 +479,7 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException(
-                    "Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server", response)
 
     def post_viewed_video_sponsor_time(self, uuid: Union[Segment, str]):
         """Notifies the server that a segment has been skipped.
@@ -516,8 +515,7 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException(
-                    "Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server", response)
 
     @cache(ttl=900)  # 15 minutes
     def get_user_info(self, public_userid: str = None) -> User:
@@ -605,8 +603,7 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest(
-                        "Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible", response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
@@ -757,8 +754,7 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException(
-                    "Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server", response)
 
     @cache(ttl=60)  # a minute
     def get_user_name(self) -> str:
@@ -806,8 +802,7 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest(
-                        "Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible", response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
@@ -880,8 +875,7 @@ class Client(metaclass=Singleton):
             ) from exc
         else:
             return [
-                TopUser(user_name, view_count,
-                        total_submissions, minutes_saved)
+                TopUser(user_name, view_count, total_submissions, minutes_saved)
                 for user_name, view_count, total_submissions, minutes_saved in zip(
                     data["userNames"],
                     data["viewCounts"],
@@ -893,8 +887,7 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest(
-                        "Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible", response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
