@@ -169,24 +169,23 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return [Segment.from_dict(d) for d in data]
         finally:
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible",
+                                     response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments_with_hash(
@@ -265,10 +264,8 @@ class Client(metaclass=Singleton):
             video_id = video_id_match.group(5)
         if video_hash and not 4 < len(video_hash) < 33:
             raise TypeError(
-                "Video hash length wrong. must be between 4 and 32, got {}".format(
-                    len(video_hash)
-                )
-            )
+                "Video hash length wrong. must be between 4 and 32, got {}".
+                format(len(video_hash)))
         if category:
             categories = [category]
         parameters = {
@@ -277,10 +274,8 @@ class Client(metaclass=Singleton):
             "service": service,
         }
         url = (
-            self.base_url
-            + "/api/skipSegments/"
-            + (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32])
-        )
+            self.base_url + "/api/skipSegments/" +
+            (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32]))
         response = self.session.get(url, params=parameters)
         try:
             data = json.loads(response.text)
@@ -291,27 +286,26 @@ class Client(metaclass=Singleton):
             else:
                 print([video["videoID"] for video in data])
                 raise BadRequest(
-                    "No video returned from server with the specified hash", response
-                )
+                    "No video returned from server with the specified hash",
+                    response)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return [Segment.from_dict(d) for d in data]
         finally:
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible",
+                                     response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     def add_skip_segments(
         self,
@@ -377,20 +371,22 @@ class Client(metaclass=Singleton):
             segments.extend([segment])
 
         body = {
-            "videoID": video_id,
-            "userID": self.user_id,
-            "userAgent": f"{__name__}/{__version__}",
-            "service": service,
-            "segments": [
-                {
-                    "segment": [
-                        s.total_seconds() if isinstance(s, timedelta) else s
-                        for s in [segment.start, segment.end]
-                    ],
-                    "category": segment.category,
-                }
-                for segment in segments
-            ],
+            "videoID":
+            video_id,
+            "userID":
+            self.user_id,
+            "userAgent":
+            f"{__name__}/{__version__}",
+            "service":
+            service,
+            "segments": [{
+                "segment": [
+                    s.total_seconds() if isinstance(s, timedelta) else s
+                    for s in [segment.start, segment.end]
+                ],
+                "category":
+                segment.category,
+            } for segment in segments],
         }
         url = self.base_url + "/api/skipSegments"
         response = self.session.post(url, json=body)
@@ -402,14 +398,14 @@ class Client(metaclass=Singleton):
                 raise Forbidden("Rejected by auto moderator", response)
             if code == 429:
                 raise RateLimitException(
-                    "Rate Limit (Too many for the same user or IP)", response
-                )
+                    "Rate Limit (Too many for the same user or IP)", response)
             if code == 409:
                 raise DuplicateException("Duplicate", response)
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException("Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server",
+                                          response)
 
     def vote_skip_segment(
         self,
@@ -481,7 +477,8 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException("Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server",
+                                          response)
 
     def post_viewed_video_sponsor_time(self, uuid: Union[Segment, str]):
         """Notifies the server that a segment has been skipped.
@@ -517,7 +514,8 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException("Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server",
+                                          response)
 
     @cache(ttl=900)  # 15 minutes
     def get_user_info(self, public_userid: str = None) -> User:
@@ -596,24 +594,23 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return User(data)
         finally:
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible",
+                                     response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=60)  # a minute
     def get_views_for_user(self):
@@ -650,9 +647,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return data["viewCount"]
         finally:
@@ -664,8 +660,7 @@ class Client(metaclass=Singleton):
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=60)  # a minute
     def get_saved_time_for_user(self):
@@ -702,9 +697,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return data["timeSaved"]
         finally:
@@ -716,8 +710,7 @@ class Client(metaclass=Singleton):
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     def set_user_name(self, user_name: str):
         """Sets the user name for the current user.
@@ -756,7 +749,8 @@ class Client(metaclass=Singleton):
             if code > 500:
                 raise ServerException("Server Error", response)
             else:
-                raise UnexpectedException("Unexpected response from server", response)
+                raise UnexpectedException("Unexpected response from server",
+                                          response)
 
     @cache(ttl=60)  # a minute
     def get_user_name(self) -> str:
@@ -795,24 +789,23 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return data["userName"]
         finally:
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible",
+                                     response)
                 if code == 404:
                     raise NotFoundException("Not Found", response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=3600)  # a minute
     def get_top_users(self, sort_type: SortType) -> List[TopUser]:
@@ -862,9 +855,8 @@ class Client(metaclass=Singleton):
         """
 
         params = {
-            "sortType": sort_type.value
-            if isinstance(sort_type, SortType)
-            else sort_type
+            "sortType":
+            sort_type.value if isinstance(sort_type, SortType) else sort_type
         }
         url = self.base_url + "/api/getTopUsers"
         response = self.session.get(url, params=params)
@@ -872,13 +864,13 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return [
-                TopUser(user_name, view_count, total_submissions, minutes_saved)
-                for user_name, view_count, total_submissions, minutes_saved in zip(
+                TopUser(user_name, view_count, total_submissions,
+                        minutes_saved) for user_name, view_count,
+                total_submissions, minutes_saved in zip(
                     data["userNames"],
                     data["viewCounts"],
                     data["totalSubmissions"],
@@ -889,16 +881,17 @@ class Client(metaclass=Singleton):
             code = response.status_code
             if code != 200:
                 if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
+                    raise BadRequest("Your inputs are wrong/impossible",
+                                     response)
                 if code > 500:
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=60)  # a minute
-    def get_total_stats(self, count_contributing_users: bool = False) -> TotalStats:
+    def get_total_stats(self,
+                        count_contributing_users: bool = False) -> TotalStats:
         """Gets total stats for the api
 
         Parameters
@@ -944,9 +937,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return TotalStats(data)
         finally:
@@ -956,8 +948,7 @@ class Client(metaclass=Singleton):
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(ttl=60)  # a minute
     def get_saved_days_formatted(self) -> float:
@@ -990,9 +981,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return float(data["daysSaved"])
         finally:
@@ -1002,8 +992,7 @@ class Client(metaclass=Singleton):
                     raise ServerException("Server Error", response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(max_entries=300)  # 5 minutes
     def get_segment_info(
@@ -1086,9 +1075,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return [SegmentInfo(segment_info) for segment_info in data]
         finally:
@@ -1105,13 +1093,12 @@ class Client(metaclass=Singleton):
                     )
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
 
     @cache(max_entries=300)  # 5 minutes
-    def search_for_user(
-        self, user_name: str, exact: bool = False
-    ) -> List[SearchedUser]:
+    def search_for_user(self,
+                        user_name: str,
+                        exact: bool = False) -> List[SearchedUser]:
         """Searches for a user based on their name.
 
         Parameters
@@ -1156,9 +1143,8 @@ class Client(metaclass=Singleton):
         try:
             data = json.loads(response.text)
         except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
+            raise InvalidJSONException("The server returned invalid JSON",
+                                       response) from exc
         else:
             return [SearchedUser(d) for d in data]
         finally:
@@ -1170,9 +1156,8 @@ class Client(metaclass=Singleton):
                     raise NotFoundException("Not Found", response)
                 if code == 400:
                     raise BadRequest(
-                        "Bad Request (Your inputs are wrong/impossible)", response
-                    )
+                        "Bad Request (Your inputs are wrong/impossible)",
+                        response)
                 else:
                     raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+                        "Unexpected response from server", response)
