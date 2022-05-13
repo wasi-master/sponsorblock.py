@@ -4,17 +4,33 @@ import os
 import secrets
 from datetime import timedelta
 from hashlib import sha256
-from typing import List, Union
+from typing import List
+from typing import Union
 
 import requests
 
-from .errors import (BadRequest, DuplicateException, Forbidden,
-                     InvalidJSONException, NotFoundException,
-                     RateLimitException, ServerException, UnexpectedException)
-from .models import (SearchedUser, Segment, SegmentInfo, TopUser, TotalStats,
-                     User)
-from .utils import (ALL_CATEGORIES, VIDEO_ID_REGEX, Category, Singleton,
-                    SortType, __version__, cache, set_env_var)
+from .errors import BadRequest
+from .errors import DuplicateException
+from .errors import Forbidden
+from .errors import InvalidJSONException
+from .errors import NotFoundException
+from .errors import RateLimitException
+from .errors import ServerException
+from .errors import UnexpectedException
+from .models import SearchedUser
+from .models import Segment
+from .models import SegmentInfo
+from .models import TopUser
+from .models import TotalStats
+from .models import User
+from .utils import __version__
+from .utils import ALL_CATEGORIES
+from .utils import cache
+from .utils import Category
+from .utils import set_env_var
+from .utils import Singleton
+from .utils import SortType
+from .utils import VIDEO_ID_REGEX
 
 
 class Client(metaclass=Singleton):
