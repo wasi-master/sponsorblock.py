@@ -11,32 +11,32 @@ class HTTPException(Exception):
 
     def __init__(self, message, response):
         self.response = response
-        super().__init__(f"{message}: {response.status_code} {response.reason}")
+        super().__init__(f"{message}: {response.status_code} {response.reason} - {response.text}")
 
 
 class Forbidden(HTTPException):
-    """Raised if the status code is 403"""
+    """Raised when the status code is 403."""
 
 
 class BadRequest(HTTPException):
-    """Raised if the status code is 400"""
+    """Raised when the status code is 400."""
 
 
 class NotFoundException(HTTPException):
-    """Raised when the status code is 404"""
+    """Raised when the status code is 404."""
 
 
 class RateLimitException(HTTPException):
-    """Raised when the status code is 429"""
+    """Raised when the status code is 429."""
 
 
 class UnexpectedException(HTTPException):
-    """Raised if an unknown error has occurred."""
+    """Raised when an unknown error has occurred."""
 
 
 class ServerException(HTTPException):
-    """Raised if the status code is bigger than 500"""
+    """Raised if the status code is bigger than 500."""
 
 
 class DuplicateException(HTTPException):
-    """Raised if the status code is 409"""
+    """Raised when the status code is 409."""

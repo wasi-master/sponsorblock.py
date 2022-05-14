@@ -9,9 +9,6 @@ API Reference
    :keywords: sponsorblock.py, documentation, sponsorblock, python, wrapper, api, reference
    :author: Wasi Master
 
-.. toctree::
-   :maxdepth: 4
-
 If the API reference does not have the documentation for any method.
 See the source code, since all methods do have docstrings that you can use.
 

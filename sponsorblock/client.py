@@ -85,6 +85,7 @@ class Client(metaclass=Singleton):
         self.default_categories = default_categories or ALL_CATEGORIES
         self.hash_length = hashed_video_id_length
         self.session = session or requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
@@ -389,7 +390,7 @@ class Client(metaclass=Singleton):
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = self.session.post(url, json=body)
+        response = self.session.post(url, data=body)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -421,7 +422,10 @@ class Client(metaclass=Singleton):
         uuid : Union[Segment, str]
             segment or uuid of the segment being voted on
         vote : Union[str, int, bool], optional
-            The vote to vote on the skip segment. Can be truthy or falsey or even basic english, by default None
+            The vote to vote on the skip segment.
+            Can be any of ``yes``, ``upvote``, ``up``, ``good``, ``1``, ``True`` for upvoting,
+            ``no``, ``downvote``, ``down``, ``bad``, ``0``, ``False`` for downvoting,
+            and ``undo`` for undoing a given vote
         category : Category, optional
             The category of the skip segment. This can be used as an alternative to the vote parameter, by default None
 
@@ -449,9 +453,9 @@ class Client(metaclass=Singleton):
         if category is None and vote is None:
             raise ValueError("At least one argument is required")
 
-        if vote in ("yes", "upvote", "up", "good", 1, True):
+        if vote in ("yes", "upvote", "up", "good", 1, "1", True, "True"):
             vote = 1
-        elif vote in ("no", "downvote", "down", "bad", 0, False):
+        elif vote in ("no", "downvote", "down", "bad", 0, "0", False, "False"):
             vote = 0
         elif vote in ("undo", 20):
             vote = 20

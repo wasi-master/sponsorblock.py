@@ -37,7 +37,13 @@ Example of getting the segments of a video using sponsorblock.py
 For more information, see :ref:`API Reference <api_reference>`
 
 There is also a cli that you can use to get segments from the command line (beta).
-To use that run `sponsorblock video_id` and pass your desired video_id
+To use that, run:
+
+.. code-block:: sh
+
+   sponsorblock video_id
+
+and pass your desired video_id.
 
 Indices and tables
 ==================

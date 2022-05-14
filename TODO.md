@@ -21,9 +21,8 @@
 
 ## Qualify of Life improvements
 
-- [ ] Add utils for tabular printing
 - [x] Use functools.ttl to cache stuff like top users
-- [ ] Add async client
+- [ ] Add async client (maybe)
 
 ## Documentation
 

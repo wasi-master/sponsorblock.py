@@ -125,7 +125,13 @@ You'll need to have [python](https://www.python.org) installed in order to use t
 See the [documentation](https://sponsorblockpy.readthedocs.io/en/latest/)
 
 There is also a cli that you can use to get segments from the command line (beta).\
-To use that run `sponsorblock video_id` and pass your desired video_id
+To use that run:
+
+```sh
+sponsorblock video_id
+```
+
+and pass your desired video_id
 
 ## Roadmap
 

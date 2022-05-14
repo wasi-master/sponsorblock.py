@@ -29,7 +29,8 @@ class Segment:
 
     Note
     ----
-    While creating your own instance you should only pass the category, start and end time. The other attributes won't do anything
+    While creating your own instance you should only pass the category, start and end time.
+    The other attributes won't do anything, those are only useful for segments gotten from the API.
     """
 
     def __init__(
