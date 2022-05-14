@@ -8,27 +8,13 @@ from typing import List, Union
 
 import requests
 
-from .errors import (
-    BadRequest,
-    DuplicateException,
-    Forbidden,
-    InvalidJSONException,
-    NotFoundException,
-    RateLimitException,
-    ServerException,
-    UnexpectedException,
-)
-from .models import SearchedUser, Segment, SegmentInfo, TopUser, TotalStats, User
-from .utils import (
-    ALL_CATEGORIES,
-    VIDEO_ID_REGEX,
-    Category,
-    SortType,
-    set_env_var,
-    cache,
-    Singleton,
-    __version__,
-)
+from .errors import (BadRequest, DuplicateException, Forbidden,
+                     InvalidJSONException, NotFoundException,
+                     RateLimitException, ServerException, UnexpectedException)
+from .models import (SearchedUser, Segment, SegmentInfo, TopUser, TotalStats,
+                     User)
+from .utils import (ALL_CATEGORIES, VIDEO_ID_REGEX, Category, Singleton,
+                    SortType, __version__, cache, set_env_var)
 
 
 class Client(metaclass=Singleton):
