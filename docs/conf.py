@@ -29,8 +29,8 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-autodoc_member_order = "bysource"  # pylint: disable=invalid-name
-autoclass_content = "both"
+# autodoc_member_order = "bysource"  # pylint: disable=invalid-name
+# autoclass_content = "both"
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 html_title = "Welcome to sponsorblock.py"
 

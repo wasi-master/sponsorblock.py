@@ -198,7 +198,8 @@ class Client(metaclass=Singleton):
         required_segments: List[str] = None,
         service: str = "YouTube",
     ) -> List[Segment]:
-        """Gets the skip segments for a given video using a K-Anonymity system.
+        """
+        Gets the skip segments for a given video using a K-Anonymity system.
 
         Parameters
         ----------
