@@ -452,6 +452,8 @@ class Client(metaclass=Singleton):
             vote = 1
         elif vote in ("no", "downvote", "down", "bad", 0, False):
             vote = 0
+        elif vote in ("undo", 20):
+            vote = 20
         else:
             vote = int(bool(vote))
 
