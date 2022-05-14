@@ -389,7 +389,7 @@ class Client(metaclass=Singleton):
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = self.session.post(url, data=body)
+        response = self.session.post(url, json=body)
         code = response.status_code
         if code != 200:
             if code == 400:
@@ -453,6 +453,8 @@ class Client(metaclass=Singleton):
             vote = 1
         elif vote in ("no", "downvote", "down", "bad", 0, False):
             vote = 0
+        elif vote in ("undo", 20):
+            vote = 20
         else:
             vote = int(bool(vote))
 
