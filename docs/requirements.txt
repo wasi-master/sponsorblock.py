@@ -1,4 +1,3 @@
 sponsorblock.py
 
 sphinx_copybutton
-furo
