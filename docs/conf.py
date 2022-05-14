@@ -35,6 +35,10 @@ extensions = [
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 html_title = "Welcome to sponsorblock.py"
 
+# exclude traditional Python prompts from your copied code
+copybutton_prompt_text = ">>> "
+copybutton_only_copy_prompt_lines = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
