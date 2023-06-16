@@ -31,6 +31,44 @@ from .utils import (
 )
 
 
+def raise_request_exception(response: requests.Response):
+    """
+    If the server returns a status code, which is not 200,
+    it needs to raise an exception:
+
+    Every exception inherits from HTTPException
+
+    :param response:
+    :return:
+    """
+    code = response.status_code
+
+    if code == 200:
+        return
+
+    if code == 400:
+        raise BadRequest("Your inputs are wrong/impossible", response)
+
+    if code == 403:
+        raise Forbidden("Rejected by auto moderator", response)
+
+    if code == 429:
+        raise RateLimitException("Rate Limit (Too many for the same user or IP)", response)
+
+    if code == 409:
+        raise DuplicateException("Duplicate", response)
+
+    if code == 404:
+        raise NotFoundException("Not Found", response)
+
+    if code > 500:
+        raise ServerException("Server Error", response)
+
+    raise UnexpectedException(
+        "Unexpected response from server", response
+    )
+
+
 class Client(metaclass=Singleton):
     """A client for making requests to the sponsorblock server."""
 
@@ -175,18 +213,7 @@ class Client(metaclass=Singleton):
         else:
             return [Segment.from_dict(d) for d in data]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments_with_hash(
@@ -297,18 +324,7 @@ class Client(metaclass=Singleton):
         else:
             return [Segment.from_dict(d) for d in data]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     def add_skip_segments(
         self,
@@ -391,22 +407,7 @@ class Client(metaclass=Singleton):
         }
         url = self.base_url + "/api/skipSegments"
         response = self.session.post(url, data=body)
-        code = response.status_code
-        if code != 200:
-            if code == 400:
-                raise BadRequest("Your inputs are wrong/impossible", response)
-            if code == 403:
-                raise Forbidden("Rejected by auto moderator", response)
-            if code == 429:
-                raise RateLimitException(
-                    "Rate Limit (Too many for the same user or IP)", response
-                )
-            if code == 409:
-                raise DuplicateException("Duplicate", response)
-            if code > 500:
-                raise ServerException("Server Error", response)
-            else:
-                raise UnexpectedException("Unexpected response from server", response)
+        raise_request_exception(response)
 
     def vote_skip_segment(
         self,
@@ -474,16 +475,7 @@ class Client(metaclass=Singleton):
 
         url = self.base_url + "/api/voteOnSponsorTime"
         response = self.session.post(url, data=parameters)
-        code = response.status_code
-        if code != 200:
-            if code == 400:
-                raise BadRequest("Your inputs are wrong/impossible", response)
-            if code == 403:
-                raise Forbidden("Rejected by auto moderator", response)
-            if code > 500:
-                raise ServerException("Server Error", response)
-            else:
-                raise UnexpectedException("Unexpected response from server", response)
+        raise_request_exception(response)
 
     def post_viewed_video_sponsor_time(self, uuid: Union[Segment, str]):
         """Notifies the server that a segment has been skipped.
@@ -511,15 +503,9 @@ class Client(metaclass=Singleton):
         """
         parameters = {"UUID": uuid.uuid if isinstance(uuid, Segment) else uuid}
         url = self.base_url + "/api/viewedVideoSponsorTime"
+
         response = self.session.post(url, params=parameters)
-        code = response.status_code
-        if code != 200:
-            if code == 400:
-                raise BadRequest("Your inputs are wrong/impossible", response)
-            if code > 500:
-                raise ServerException("Server Error", response)
-            else:
-                raise UnexpectedException("Unexpected response from server", response)
+        raise_request_exception(response)
 
     @cache(ttl=900)  # 15 minutes
     def get_user_info(self, public_userid: str = None) -> User:
@@ -604,18 +590,7 @@ class Client(metaclass=Singleton):
         else:
             return User(data)
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
     def get_views_for_user(self):
@@ -658,16 +633,7 @@ class Client(metaclass=Singleton):
         else:
             return data["viewCount"]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
     def get_saved_time_for_user(self):
@@ -710,16 +676,7 @@ class Client(metaclass=Singleton):
         else:
             return data["timeSaved"]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     def set_user_name(self, user_name: str):
         """Sets the user name for the current user.
@@ -751,14 +708,7 @@ class Client(metaclass=Singleton):
 
         url = self.base_url + "/api/setUsername"
         response = self.session.post(url, data=parameters)
-        code = response.status_code
-        if code != 200:
-            if code == 400:
-                raise BadRequest("Your inputs are wrong/impossible", response)
-            if code > 500:
-                raise ServerException("Server Error", response)
-            else:
-                raise UnexpectedException("Unexpected response from server", response)
+        raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
     def get_user_name(self) -> str:
@@ -803,18 +753,7 @@ class Client(metaclass=Singleton):
         else:
             return data["userName"]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=3600)  # a minute
     def get_top_users(self, sort_type: SortType) -> List[TopUser]:
@@ -888,16 +827,7 @@ class Client(metaclass=Singleton):
                 )
             ]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code == 400:
-                    raise BadRequest("Your inputs are wrong/impossible", response)
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
     def get_total_stats(self, count_contributing_users: bool = False) -> TotalStats:
@@ -952,14 +882,7 @@ class Client(metaclass=Singleton):
         else:
             return TotalStats(data)
         finally:
-            code = response.status_code
-            if code != 200:
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
     def get_saved_days_formatted(self) -> float:
@@ -998,14 +921,7 @@ class Client(metaclass=Singleton):
         else:
             return float(data["daysSaved"])
         finally:
-            code = response.status_code
-            if code != 200:
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
     def get_segment_info(
@@ -1094,21 +1010,7 @@ class Client(metaclass=Singleton):
         else:
             return [SegmentInfo(segment_info) for segment_info in data]
         finally:
-            code = response.status_code
-            if code != 200:
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code == 400:
-                    raise BadRequest(
-                        "Bad Request (Your inputs are wrong/impossible) or exceed the character limits",
-                        response,
-                    )
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
     def search_for_user(
@@ -1165,16 +1067,4 @@ class Client(metaclass=Singleton):
             return [SearchedUser(d) for d in data]
         finally:
             code = response.status_code
-            if code != 200:
-                if code > 500:
-                    raise ServerException("Server Error", response)
-                if code == 404:
-                    raise NotFoundException("Not Found", response)
-                if code == 400:
-                    raise BadRequest(
-                        "Bad Request (Your inputs are wrong/impossible)", response
-                    )
-                else:
-                    raise UnexpectedException(
-                        "Unexpected response from server", response
-                    )
+            raise_request_exception(response)
