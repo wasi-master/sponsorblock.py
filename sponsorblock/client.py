@@ -61,7 +61,7 @@ def raise_request_exception(response: requests.Response):
     if code == 404:
         raise NotFoundException("Not Found", response)
 
-    if code > 500:
+    if code >= 500:
         raise ServerException("Server Error", response)
 
     raise UnexpectedException(
@@ -113,12 +113,12 @@ class Client(metaclass=Singleton):
         sponsorblock.utils.set_env_var : Use this to change the environment variable for the user id
         """
         self.base_url = base_url or "https://sponsor.ajay.app"
-        if not no_env:
-            if os.environ.get("SPONSORBLOCK_USER_ID"):
-                self.user_id = user_id or os.environ["SPONSORBLOCK_USER_ID"]
-            else:
-                self.user_id = user_id or secrets.token_hex(32)
-                set_env_var("SPONSORBLOCK_USER_ID", user_id)
+        if not no_env and os.environ.get("SPONSORBLOCK_USER_ID"):
+            self.user_id = user_id or os.environ["SPONSORBLOCK_USER_ID"]
+        else:
+            self.user_id = user_id or secrets.token_hex(32)
+            if not no_env:
+                set_env_var("SPONSORBLOCK_USER_ID", self.user_id)
         self.debug = debug
         self.default_categories = default_categories or ALL_CATEGORIES
         self.hash_length = hashed_video_id_length
@@ -291,7 +291,7 @@ class Client(metaclass=Singleton):
             if not video_id_match:
                 raise ValueError("Invalid video id")
             video_id = video_id_match.group(5)
-        if video_hash and not 4 < len(video_hash) < 33:
+        if video_hash and not 4 <= len(video_hash) <= 32:
             raise TypeError(
                 "Video hash length wrong. must be between 4 and 32, got {}".format(
                     len(video_hash)
@@ -304,7 +304,9 @@ class Client(metaclass=Singleton):
             "requiredSegments": required_segments or [],
             "service": service,
         }
-        url =  self.base_url + "/api/skipSegments/" + (video_hash or sha256(video_id.encode("utf-8")).hexdigest()[:32])
+        url = self.base_url + "/api/skipSegments/" + (
+            video_hash or sha256(video_id.encode("utf-8")).hexdigest()[: self.hash_length]
+        )
         response = self.session.get(url, params=parameters)
         try:
             data = json.loads(response.text)
@@ -313,7 +315,6 @@ class Client(metaclass=Singleton):
                     data = video["segments"]
                     break
             else:
-                print([video["videoID"] for video in data])
                 raise BadRequest(
                     "No video returned from server with the specified hash", response
                 )
@@ -378,7 +379,7 @@ class Client(metaclass=Singleton):
                 segment=sb.Segment(category="music_offtopic", start=0, end=21.808434, action_type="skip")
             )
         """
-        if segment is None and segments == []:
+        if segment is None and not segments:
             raise ValueError("At least one segment is required")
         segments = segments or []
         if len(video_id) != 11:
@@ -453,15 +454,18 @@ class Client(metaclass=Singleton):
 
         if category is None and vote is None:
             raise ValueError("At least one argument is required")
+        if category is not None and vote is not None:
+            raise ValueError("Only one of vote and category can be passed")
 
-        if vote in ("yes", "upvote", "up", "good", 1, "1", True, "True"):
-            vote = 1
-        elif vote in ("no", "downvote", "down", "bad", 0, "0", False, "False"):
-            vote = 0
-        elif vote in ("undo", 20):
-            vote = 20
-        else:
-            vote = int(bool(vote))
+        if vote is not None:
+            if vote in ("yes", "upvote", "up", "good", 1, "1", True, "True"):
+                vote = 1
+            elif vote in ("no", "downvote", "down", "bad", 0, "0", False, "False"):
+                vote = 0
+            elif vote in ("undo", 20):
+                vote = 20
+            else:
+                vote = int(bool(vote))
 
         parameters = {
             "UUID": uuid.uuid if isinstance(uuid, Segment) else uuid,
@@ -987,9 +991,9 @@ class Client(metaclass=Singleton):
         >>> segment_infos[0].time_submitted.day
         16
         """
-        if segment is None and segments is []:
+        if segment is None and not segments:
             raise ValueError("At least one segment is required")
-        segments = segments or []
+        segments = list(segments) if segments else []
         if segment:
             segments.extend([segment])
         parameters = {
@@ -1066,5 +1070,4 @@ class Client(metaclass=Singleton):
         else:
             return [SearchedUser(d) for d in data]
         finally:
-            code = response.status_code
             raise_request_exception(response)
