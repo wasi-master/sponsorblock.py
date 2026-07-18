@@ -91,12 +91,19 @@ def cache(**kwargs):
         except AttributeError:
             function.cache = {}
 
+        def freeze(value):
+            # lists are common arguments (e.g. categories) but are not hashable
+            return tuple(value) if isinstance(value, list) else value
+
         @functools.wraps(function)
-        def wrapper(*args):
+        def wrapper(*args, **fkwargs):
+            cache_key = tuple(freeze(arg) for arg in args) + tuple(
+                sorted((key, freeze(value)) for key, value in fkwargs.items())
+            )
             # if nothing valid in cache, insert something
             if (
-                not args in function.cache
-                or datetime.now() > function.cache[args]["expiry"]
+                cache_key not in function.cache
+                or datetime.now() > function.cache[cache_key]["expiry"]
             ):
                 if "max_entries" in kwargs:
                     max_entries = kwargs["max_entries"]
@@ -110,15 +117,15 @@ def cache(**kwargs):
                         # if nothing is expired that is deletable, delete the first
                         if len(function.cache) >= max_entries:
                             del function.cache[next(iter(function.cache))]
-                function.cache[args] = {
-                    "result": function(*args),
+                function.cache[cache_key] = {
+                    "result": function(*args, **fkwargs),
                     "expiry": datetime.max
                     if "ttl" not in kwargs
                     else datetime.now() + timedelta(seconds=kwargs["ttl"]),
                 }
 
             # answer from cache
-            return function.cache[args]["result"]
+            return function.cache[cache_key]["result"]
 
         return wrapper
 
