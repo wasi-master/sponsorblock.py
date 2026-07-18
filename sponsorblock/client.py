@@ -123,7 +123,6 @@ class Client(metaclass=Singleton):
         self.default_categories = default_categories or ALL_CATEGORIES
         self.hash_length = hashed_video_id_length
         self.session = session or requests.Session()
-        self.session.headers.update({"Content-Type": "application/json"})
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
@@ -198,7 +197,7 @@ class Client(metaclass=Singleton):
             categories = [category]
         parameters = {
             "category": categories or self.default_categories,
-            "requiredSegments": required_segments or [],
+            "requiredSegment": required_segments or [],
             "service": service,
             "videoID": video_id,
         }
@@ -301,7 +300,7 @@ class Client(metaclass=Singleton):
             categories = [category]
         parameters = {
             "category": categories or self.default_categories,
-            "requiredSegments": required_segments or [],
+            "requiredSegment": required_segments or [],
             "service": service,
         }
         url = self.base_url + "/api/skipSegments/" + (
@@ -407,7 +406,7 @@ class Client(metaclass=Singleton):
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = self.session.post(url, data=body)
+        response = self.session.post(url, json=body)
         raise_request_exception(response)
 
     def vote_skip_segment(
@@ -478,7 +477,7 @@ class Client(metaclass=Singleton):
             parameters["category"] = category
 
         url = self.base_url + "/api/voteOnSponsorTime"
-        response = self.session.post(url, data=parameters)
+        response = self.session.post(url, params=parameters)
         raise_request_exception(response)
 
     def post_viewed_video_sponsor_time(self, uuid: Union[Segment, str]):
@@ -711,7 +710,7 @@ class Client(metaclass=Singleton):
         }
 
         url = self.base_url + "/api/setUsername"
-        response = self.session.post(url, data=parameters)
+        response = self.session.post(url, params=parameters)
         raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
