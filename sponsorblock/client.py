@@ -111,7 +111,7 @@ class Client(metaclass=Singleton):
         no_env : bool, optional
             Whether to not store the current user_id in a environment variable, by default False
         default_categories : List[str], optional
-            The default categories to use, by default [sponsor, selfpromo, interaction, intro, outro, preview, music_offtopic]
+            The default categories to use, by default all categories (see https://wiki.sponsor.ajay.app/w/Types#Category)
         hashed_video_id_length : int, optional
             The length of the hashed video id to use for K-Anonymity, by default 4
         session : requests.Session, optional
@@ -727,7 +727,7 @@ class Client(metaclass=Singleton):
         --------
         >>> import sponsorblock as sb
         >>> client = sb.Client("your local user id")
-        >>> client.views_for_user()
+        >>> client.get_views_for_user()
         4367
         """
         params = {"userID": self.user_id}
@@ -748,12 +748,12 @@ class Client(metaclass=Singleton):
 
     @cache(ttl=60)  # a minute
     def get_saved_time_for_user(self):
-        """Gets the view count for the current user.
+        """Gets the total time saved from all the current user's segments.
 
         Returns
         -------
-        int
-            The amount of views for the current user in minutes.
+        float
+            The amount of time saved by the current user's segments, in minutes.
 
         Raises
         ------
@@ -770,7 +770,7 @@ class Client(metaclass=Singleton):
         --------
         >>> import sponsorblock as sb
         >>> client = sb.Client("your local user id")
-        >>> client.saved_time_for_user()
+        >>> client.get_saved_time_for_user()
         1181.974021220207
         """
         params = {"userID": self.user_id}
@@ -866,11 +866,16 @@ class Client(metaclass=Singleton):
         finally:
             raise_request_exception(response)
 
-    @cache(ttl=3600)  # a minute
+    @cache(ttl=3600)  # an hour
     def get_top_users(self, sort_type: SortType) -> List[TopUser]:
         """Gets the top users.
 
-        Paremeters
+        Warning
+        -------
+        This endpoint is currently disabled on the official server and will always
+        raise NotFoundException there. It may still work on self-hosted servers.
+
+        Parameters
         ----------
         sort_type : SortType
             The sort type, can be either `SortType.MINUTES_SAVED`, `SortType.VIEW_COUNT`, or `SortType.TOTAL_SUBMISSIONS`

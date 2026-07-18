@@ -8,6 +8,7 @@
 - [x] Add support for voting segments
 - [x] Add support for posting skipped segments
 - [x] Add support for getting user information
+- [x] Add support for getting user stats
 - [x] Add support for getting view count
 - [x] Add support for getting saved time
 - [x] Add support for getting username
@@ -16,8 +17,13 @@
 - [x] Add support for getting total stats
 - [x] Add support for getting detailed segment info
 - [x] Add support for getting users via name
-- [ ] Add support for getting database info
-- [ ] Add support for locking
+- [x] Add support for getting database info (via the server status endpoint)
+- [x] Add support for locking
+- [x] Add support for searching segments
+- [x] Add support for action types (skip, mute, full, poi, chapter)
+- [x] Add support for the newer categories (hook, exclusive_access, chapter)
+- [x] Add support for VIP calls (shadow ban, warn, clear cache, purge, segment shift, temp VIP, features)
+- [x] Add support for admin calls (adding VIPs)
 
 ## Qualify of Life improvements
 

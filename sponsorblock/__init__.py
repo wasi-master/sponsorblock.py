@@ -11,8 +11,20 @@ from .errors import (
     ServerException,
     UnexpectedException,
 )
-from .models import Segment, User, TopUser, TotalStats, SegmentInfo, SearchedUser
-from .utils import SortType
+from .models import (
+    LockReason,
+    LockedCategories,
+    SearchedUser,
+    Segment,
+    SegmentInfo,
+    SegmentSearchResults,
+    ServerStatus,
+    TopUser,
+    TotalStats,
+    User,
+    UserStats,
+)
+from .utils import SortType, UserFeature
 
 __name__ = "sponsorblock.py"  # noqa
 __version__ = "0.2.3"
