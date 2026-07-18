@@ -22,6 +22,7 @@ from .models import SearchedUser, Segment, SegmentInfo, TopUser, TotalStats, Use
 from .utils import (
     ALL_CATEGORIES,
     VIDEO_ID_REGEX,
+    ActionType,
     Category,
     SortType,
     set_env_var,
@@ -132,6 +133,8 @@ class Client(metaclass=Singleton):
         category: Category = None,
         categories: List[str] = None,
         required_segments: List[str] = None,
+        action_type: ActionType = None,
+        action_types: List[str] = None,
         service: str = "YouTube",
     ) -> List[Segment]:
         """Gets the skip segments for a given video.
@@ -146,6 +149,10 @@ class Client(metaclass=Singleton):
             A list of categories to get the skip segments for. See https://wiki.sponsor.ajay.app/w/Types
         required_segments : List[str]
             A list of segment UUIDs to require be retrieved, even if they don't meet the minimum vote threshold.
+        action_type : str
+            An action type to get segments for (e.g. ``skip``, ``mute``, ``full``, ``poi``, ``chapter``), defaults to ``skip`` on the server. See https://wiki.sponsor.ajay.app/w/Types
+        action_types : List[str]
+            A list of action types to get segments for. See https://wiki.sponsor.ajay.app/w/Types
         service : str
             The service to use, default is 'YouTube'. See https://wiki.sponsor.ajay.app/w/Types#service.
 
@@ -195,12 +202,16 @@ class Client(metaclass=Singleton):
             video_id = video_id_match.group(5)
         if category:
             categories = [category]
+        if action_type:
+            action_types = [action_type]
         parameters = {
             "category": categories or self.default_categories,
             "requiredSegment": required_segments or [],
             "service": service,
             "videoID": video_id,
         }
+        if action_types:
+            parameters["actionType"] = action_types
         url = self.base_url + "/api/skipSegments/"
         response = self.session.get(url, params=parameters)
         try:
@@ -223,6 +234,8 @@ class Client(metaclass=Singleton):
         category: Category = None,
         categories: List[str] = None,
         required_segments: List[str] = None,
+        action_type: ActionType = None,
+        action_types: List[str] = None,
         service: str = "YouTube",
     ) -> List[Segment]:
         """
@@ -242,6 +255,10 @@ class Client(metaclass=Singleton):
             A list of categories to get the skip segments for. See https://wiki.sponsor.ajay.app/w/Types
         required_segments : List[str]
             A list of segment UUIDs to require be retrieved, even if they don't meet the minimum vote threshold.
+        action_type : str
+            An action type to get segments for (e.g. ``skip``, ``mute``, ``full``, ``poi``, ``chapter``), defaults to ``skip`` on the server. See https://wiki.sponsor.ajay.app/w/Types
+        action_types : List[str]
+            A list of action types to get segments for. See https://wiki.sponsor.ajay.app/w/Types
         service : str
             The service to use, default is 'YouTube'. See https://wiki.sponsor.ajay.app/w/Types#service.
 
@@ -298,11 +315,15 @@ class Client(metaclass=Singleton):
             )
         if category:
             categories = [category]
+        if action_type:
+            action_types = [action_type]
         parameters = {
             "category": categories or self.default_categories,
             "requiredSegment": required_segments or [],
             "service": service,
         }
+        if action_types:
+            parameters["actionType"] = action_types
         url = self.base_url + "/api/skipSegments/" + (
             video_hash or sha256(video_id.encode("utf-8")).hexdigest()[: self.hash_length]
         )
@@ -401,6 +422,8 @@ class Client(metaclass=Singleton):
                         for s in [segment.start, segment.end]
                     ],
                     "category": segment.category,
+                    "actionType": segment.action_type or "skip",
+                    "description": segment.description or "",
                 }
                 for segment in segments
             ],

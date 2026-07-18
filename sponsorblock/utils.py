@@ -20,9 +20,12 @@ ALL_CATEGORIES = [
     "intro",
     "outro",
     "preview",
+    "hook",
     "music_offtopic",
     "poi_highlight",
     "filler",
+    "exclusive_access",
+    "chapter",
 ]
 Category = Literal[
     "sponsor",
@@ -31,9 +34,26 @@ Category = Literal[
     "intro",
     "outro",
     "preview",
+    "hook",
     "music_offtopic",
     "poi_highlight",
     "filler",
+    "exclusive_access",
+    "chapter",
+]
+ALL_ACTION_TYPES = [
+    "skip",
+    "mute",
+    "full",
+    "poi",
+    "chapter",
+]
+ActionType = Literal[
+    "skip",
+    "mute",
+    "full",
+    "poi",
+    "chapter",
 ]
 __version__ = "0.2.1"
 

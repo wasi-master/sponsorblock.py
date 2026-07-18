@@ -30,10 +30,12 @@ def run():
         "intro": ("Intermission/Intro Animation", "cyan"),
         "outro": ("Endcards/Credits", "blue"),
         "preview": ("Preview/Recap", "light_sky_blue1"),
+        "hook": ("Hook", "gold1"),
         "music_offtopic": ("Music: Non-Music Section", "orange1"),
         "poi_highlight": ("Point of Interest", "red"),
         "filler": ("Filler", "purple3"),
-        "preview": ("Preview/Recap", "sky_blue3"),
+        "exclusive_access": ("Exclusive Access", "green3"),
+        "chapter": ("Chapter", "grey66"),
     }
 
     segments = client.get_skip_segments(video_id)

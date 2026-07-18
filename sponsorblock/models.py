@@ -24,12 +24,21 @@ class Segment:
         The duration of the segment, by default None
     action_type : Optional[str], optional
         The action_type of the segment, by default None
+    description : Optional[str], optional
+        The chapter title for chapter segments, an empty string for other segments
+    locked : Optional[int], optional
+        Whether the segment is locked, only available for segments gotten from the API
+    votes : Optional[int], optional
+        The amount of votes on the segment, only available for segments gotten from the API
+    video_duration : Optional[float], optional
+        The duration of the video when the segment was submitted, only available for segments gotten from the API
     data : Optional[dict], optional
         The raw data that was used to create the segment, can be None if the segment was created manually
 
     Note
     ----
-    While creating your own instance you should only pass the category, start and end time.
+    While creating your own instance you should only pass the category, start, end time and
+    optionally the action_type and description (for chapters).
     The other attributes won't do anything, those are only useful for segments gotten from the API.
     """
 
@@ -42,6 +51,10 @@ class Segment:
         duration: Optional[timedelta] = None,
         action_type: Optional[str] = None,
         *,
+        description: Optional[str] = None,
+        locked: Optional[int] = None,
+        votes: Optional[int] = None,
+        video_duration: Optional[float] = None,
         data: Optional[dict] = None,
     ):
         """A skip segment
@@ -54,6 +67,10 @@ class Segment:
             The start time of the segment
         end : float, timedelta
             The end time of the segment
+        action_type : str, optional
+            The action type of the segment (``skip``, ``mute``, ``full``, ``poi``, ``chapter``)
+        description : str, optional
+            The chapter title, only used for chapter segments
         """
         self.category = category
         self.start = start
@@ -61,6 +78,10 @@ class Segment:
         self.uuid = uuid
         self.duration = duration
         self.action_type = action_type
+        self.description = description
+        self.locked = locked
+        self.votes = votes
+        self.video_duration = video_duration
         self.data = data
 
     @classmethod
@@ -85,8 +106,20 @@ class Segment:
         start, end = data["segment"]
         uuid = data["UUID"]
         duration = timedelta(seconds=reduce(operator.sub, reversed(data["segment"])))
-        action_type = data["actionType"]
-        return cls(category, start, end, uuid, duration, action_type, data=data)
+        action_type = data.get("actionType")
+        return cls(
+            category,
+            start,
+            end,
+            uuid,
+            duration,
+            action_type,
+            description=data.get("description"),
+            locked=data.get("locked"),
+            votes=data.get("votes"),
+            video_duration=data.get("videoDuration"),
+            data=data,
+        )
 
     def __repr__(self):
         return (
