@@ -18,7 +18,15 @@ from .errors import (
     ServerException,
     UnexpectedException,
 )
-from .models import SearchedUser, Segment, SegmentInfo, TopUser, TotalStats, User
+from .models import (
+    SearchedUser,
+    Segment,
+    SegmentInfo,
+    TopUser,
+    TotalStats,
+    User,
+    UserStats,
+)
 from .utils import (
     ALL_CATEGORIES,
     VIDEO_ID_REGEX,
@@ -615,6 +623,78 @@ class Client(metaclass=Singleton):
             ) from exc
         else:
             return User(data)
+        finally:
+            raise_request_exception(response)
+
+    @cache(ttl=900)  # 15 minutes
+    def get_user_stats(
+        self,
+        public_userid: str = None,
+        *,
+        fetch_category_stats: bool = False,
+        fetch_action_type_stats: bool = False,
+    ) -> UserStats:
+        """Gets the stats for a user.
+
+        Parameters
+        ----------
+        public_userid : str, optional
+            The public user id of the user to get stats for, by default the current user id.
+        fetch_category_stats : bool, optional
+            Whether to also fetch the number of segments per category, by default False
+        fetch_action_type_stats : bool, optional
+            Whether to also fetch the number of segments per action type, by default False
+
+        Returns
+        -------
+        UserStats
+            The stats for the specified user.
+
+        Raises
+        ------
+        InvalidJSONException
+            The server returned a response that was not valid JSON.
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client("your local user id")
+        >>> client.get_user_stats(fetch_category_stats=True)
+        UserStats(
+            user_id=32be414f723dafb3b6903e92e1694f55f104de19c78d5f158c01c38e791fb792,
+            user_name=Wasi Master,
+            minutes_saved=1261,
+            segment_count=47,
+            category_counts={'sponsor': 20, 'intro': 5, ...},
+            action_type_counts=None
+        )
+        """
+        if public_userid is None:
+            params = {"userID": self.user_id}
+        else:
+            params = {"publicUserID": public_userid}
+        if fetch_category_stats:
+            params["fetchCategoryStats"] = "true"
+        if fetch_action_type_stats:
+            params["fetchActionTypeStats"] = "true"
+
+        url = self.base_url + "/api/userStats"
+        response = self.session.get(url, params=params)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return UserStats(data)
         finally:
             raise_request_exception(response)
 

@@ -184,6 +184,47 @@ class User:
         )
 
 
+class UserStats:
+    """Stats for a user, gotten from the userStats API
+
+    Attributes
+    ----------
+    user_id : str
+        The public id of the user
+    user_name : str
+        The name of the user
+    minutes_saved : float
+        The amount of minutes saved by the user's segments
+    segment_count : int
+        The amount of segments created by the user
+    category_counts : Optional[dict]
+        A mapping of category name to the number of segments the user submitted in
+        that category. Only available if fetch_category_stats was True
+    action_type_counts : Optional[dict]
+        A mapping of action type name to the number of segments the user submitted with
+        that action type. Only available if fetch_action_type_stats was True
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
+    """
+
+    def __init__(self, data: dict):
+        self.user_id = data["userID"]
+        self.user_name = data["userName"]
+        self.minutes_saved = data["overallStats"]["minutesSaved"]
+        self.segment_count = data["overallStats"]["segmentCount"]
+        self.category_counts = data.get("categoryCount")
+        self.action_type_counts = data.get("actionTypeCount")
+
+    def __repr__(self):
+        return (
+            f"UserStats(user_id={self.user_id}, user_name={self.user_name}, "
+            f"minutes_saved={self.minutes_saved}, segment_count={self.segment_count}, "
+            f"category_counts={self.category_counts}, action_type_counts={self.action_type_counts})"
+        )
+
+
 class TopUser:
     """
     A top user.
