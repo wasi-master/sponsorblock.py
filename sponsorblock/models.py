@@ -444,6 +444,57 @@ class LockReason:
         )
 
 
+class ServerStatus:
+    """The status of the sponsorblock server
+
+    Attributes
+    ----------
+    uptime : float
+        The uptime of the server in seconds
+    commit : str
+        The full SHA hash of the latest git commit of the server
+    db : int
+        The current database version
+    start_time : int
+        The unix time in milliseconds that the request was received
+    process_time : int
+        The delay in milliseconds between the database request being made and the response being received
+    redis_process_time : Optional[int]
+        The delay in milliseconds between the redis request being made and the response being received
+    load_average : List[float]
+        The 5 and 15 minute load averages of the server
+    status_requests : int
+        The number of status requests made in the last minute
+    hostname : str
+        The hostname of the server that answered the request
+    data : dict
+        The raw response, useful for any extra fields the server might return
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
+    """
+
+    def __init__(self, data: dict):
+        self.uptime = data.get("uptime")
+        self.commit = data.get("commit")
+        self.db = data.get("db")
+        self.start_time = data.get("startTime")
+        self.process_time = data.get("processTime")
+        self.redis_process_time = data.get("redisProcessTime")
+        self.load_average = data.get("loadavg")
+        self.status_requests = data.get("statusRequests")
+        self.hostname = data.get("hostname")
+        self.data = data
+
+    def __repr__(self):
+        return (
+            f"ServerStatus(uptime={self.uptime}, commit={self.commit}, db={self.db}, "
+            f"start_time={self.start_time}, process_time={self.process_time}, "
+            f"load_average={self.load_average}, hostname={self.hostname})"
+        )
+
+
 class SearchedUser:
     """A user gotten by searching for his name
 

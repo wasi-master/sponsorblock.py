@@ -22,6 +22,7 @@ from .models import (
     LockReason,
     LockedCategories,
     SearchedUser,
+    ServerStatus,
     Segment,
     SegmentInfo,
     TopUser,
@@ -1440,6 +1441,59 @@ class Client(metaclass=Singleton):
         url = self.base_url + "/api/lockCategories"
         response = self.session.delete(url, json=body)
         raise_request_exception(response)
+
+    def get_status(self, value: str = None) -> Union[ServerStatus, int, str, list]:
+        """Gets the status of the sponsorblock server.
+
+        This includes information about the database, such as the current database version,
+        along with uptime, load averages and more.
+
+        Parameters
+        ----------
+        value : str, optional
+            A single status field to get (e.g. ``uptime``, ``db``, ``loadavg``), by default
+            all fields are fetched and a ServerStatus is returned.
+
+        Returns
+        -------
+        Union[ServerStatus, int, str, list]
+            The status of the server, or the single requested value.
+
+        Raises
+        ------
+        InvalidJSONException
+            The server returned invalid JSON
+        NotFoundException
+            The server returned a 404 error, most likely because the requested value does not exist
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 404, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> client.get_status()
+        ServerStatus(uptime=244459.26, commit=bfca2fb0..., db=46, ...)
+        >>> client.get_status("db")
+        46
+        """
+        url = self.base_url + "/api/status" + (f"/{value}" if value else "")
+        response = self.session.get(url)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            if value is not None:
+                return data[value] if isinstance(data, dict) else data
+            return ServerStatus(data)
+        finally:
+            raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
     def search_for_user(
