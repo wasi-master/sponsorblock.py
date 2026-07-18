@@ -1,5 +1,6 @@
 """Module for the client class."""
 import json
+import logging
 import os
 import secrets
 from datetime import timedelta
@@ -10,8 +11,10 @@ import requests
 
 from .errors import (
     BadRequest,
+    ConnectionException,
     DuplicateException,
     Forbidden,
+    HTTPException,
     InvalidJSONException,
     NotFoundException,
     RateLimitException,
@@ -43,6 +46,8 @@ from .utils import (
     Singleton,
     __version__,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def raise_request_exception(response: requests.Response):
@@ -96,6 +101,7 @@ class Client(metaclass=Singleton):
         default_categories: List[str] = None,
         hashed_video_id_length: int = 4,
         session: requests.Session = None,
+        silent: bool = False,
     ):
 
         """A client for making requests to the sponsorblock server.
@@ -116,6 +122,11 @@ class Client(metaclass=Singleton):
             The length of the hashed video id to use for K-Anonymity, by default 4
         session : requests.Session, optional
             The session to use for requests, by default a new session
+        silent : bool, optional
+            If True, methods that get segments (get_skip_segments and
+            get_skip_segments_with_hash) will not raise exceptions and instead log a
+            warning and return an empty list when anything fails (for example when
+            there is no internet connection), by default False
 
         Warning
         -------
@@ -137,6 +148,18 @@ class Client(metaclass=Singleton):
         self.default_categories = default_categories or ALL_CATEGORIES
         self.hash_length = hashed_video_id_length
         self.session = session or requests.Session()
+        self.silent = silent
+
+    def _request(self, method: str, url: str, **kwargs) -> requests.Response:
+        """Makes a request with the session, raising ConnectionException when the
+        connection itself fails (no internet, timeout, dns failure, etc.)."""
+        try:
+            return self.session.request(method, url, **kwargs)
+        except requests.exceptions.RequestException as exc:
+            raise ConnectionException(
+                "Could not connect to the sponsorblock server: {}".format(exc),
+                original=exc,
+            ) from exc
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments(
@@ -178,6 +201,8 @@ class Client(metaclass=Singleton):
         ------
         ValueError
             The video id is invalid
+        ConnectionException
+            The connection to the server failed (e.g. no internet connection)
         InvalidJSONException
             The server returned invalid JSON
         BadRequest
@@ -188,6 +213,11 @@ class Client(metaclass=Singleton):
             The server returned a 500 error, most likely because the server is down
         UnexpectedException
             The server returned a response that was not 200, 400, 404, or 500
+
+        Note
+        ----
+        If the client was created with ``silent=True``, none of the request related
+        exceptions are raised, instead a warning is logged and an empty list is returned.
 
         Examples
         --------
@@ -226,17 +256,23 @@ class Client(metaclass=Singleton):
         if action_types:
             parameters["actionType"] = action_types
         url = self.base_url + "/api/skipSegments/"
-        response = self.session.get(url, params=parameters)
         try:
-            data = json.loads(response.text)
-        except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
-        else:
-            return [Segment.from_dict(d) for d in data]
-        finally:
-            raise_request_exception(response)
+            response = self._request("get", url, params=parameters)
+            try:
+                data = json.loads(response.text)
+            except json.JSONDecodeError as exc:
+                raise InvalidJSONException(
+                    "The server returned invalid JSON", response
+                ) from exc
+            else:
+                return [Segment.from_dict(d) for d in data]
+            finally:
+                raise_request_exception(response)
+        except (ConnectionException, HTTPException, InvalidJSONException) as exc:
+            if self.silent:
+                logger.warning("Could not get segments for %s: %s", video_id, exc)
+                return []
+            raise
 
     @cache(ttl=300)  # 5 minutes
     def get_skip_segments_with_hash(
@@ -285,6 +321,8 @@ class Client(metaclass=Singleton):
         ------
         ValueError
             The video id is invalid
+        ConnectionException
+            The connection to the server failed (e.g. no internet connection)
         InvalidJSONException
             The server returned invalid JSON
         BadRequest
@@ -295,6 +333,11 @@ class Client(metaclass=Singleton):
             The server returned a 500 error, most likely because the server is down
         UnexpectedException
             The server returned a response that was not 200, 400, 404, or 500
+
+        Note
+        ----
+        If the client was created with ``silent=True``, none of the request related
+        exceptions are raised, instead a warning is logged and an empty list is returned.
 
         Examples
         --------
@@ -340,25 +383,31 @@ class Client(metaclass=Singleton):
         url = self.base_url + "/api/skipSegments/" + (
             video_hash or sha256(video_id.encode("utf-8")).hexdigest()[: self.hash_length]
         )
-        response = self.session.get(url, params=parameters)
         try:
-            data = json.loads(response.text)
-            for video in data:
-                if video["videoID"] == video_id:
-                    data = video["segments"]
-                    break
+            response = self._request("get", url, params=parameters)
+            try:
+                data = json.loads(response.text)
+                for video in data:
+                    if video["videoID"] == video_id:
+                        data = video["segments"]
+                        break
+                else:
+                    raise BadRequest(
+                        "No video returned from server with the specified hash", response
+                    )
+            except json.JSONDecodeError as exc:
+                raise InvalidJSONException(
+                    "The server returned invalid JSON", response
+                ) from exc
             else:
-                raise BadRequest(
-                    "No video returned from server with the specified hash", response
-                )
-        except json.JSONDecodeError as exc:
-            raise InvalidJSONException(
-                "The server returned invalid JSON", response
-            ) from exc
-        else:
-            return [Segment.from_dict(d) for d in data]
-        finally:
-            raise_request_exception(response)
+                return [Segment.from_dict(d) for d in data]
+            finally:
+                raise_request_exception(response)
+        except (ConnectionException, HTTPException, InvalidJSONException) as exc:
+            if self.silent:
+                logger.warning("Could not get segments for %s: %s", video_id, exc)
+                return []
+            raise
 
     def add_skip_segments(
         self,
@@ -442,7 +491,7 @@ class Client(metaclass=Singleton):
             ],
         }
         url = self.base_url + "/api/skipSegments"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def vote_skip_segment(
@@ -513,7 +562,7 @@ class Client(metaclass=Singleton):
             parameters["category"] = category
 
         url = self.base_url + "/api/voteOnSponsorTime"
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     def post_viewed_video_sponsor_time(self, uuid: Union[Segment, str]):
@@ -543,7 +592,7 @@ class Client(metaclass=Singleton):
         parameters = {"UUID": uuid.uuid if isinstance(uuid, Segment) else uuid}
         url = self.base_url + "/api/viewedVideoSponsorTime"
 
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     @cache(ttl=900)  # 15 minutes
@@ -618,7 +667,7 @@ class Client(metaclass=Singleton):
             params = {"publicUserID": public_userid}
 
         url = self.base_url + "/api/userInfo"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -690,7 +739,7 @@ class Client(metaclass=Singleton):
             params["fetchActionTypeStats"] = "true"
 
         url = self.base_url + "/api/userStats"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -733,7 +782,7 @@ class Client(metaclass=Singleton):
         params = {"userID": self.user_id}
 
         url = self.base_url + "/api/getViewsForUser"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -776,7 +825,7 @@ class Client(metaclass=Singleton):
         params = {"userID": self.user_id}
 
         url = self.base_url + "/api/getSavedTimeForUser"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -818,7 +867,7 @@ class Client(metaclass=Singleton):
         }
 
         url = self.base_url + "/api/setUsername"
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     @cache(ttl=60)  # a minute
@@ -853,7 +902,7 @@ class Client(metaclass=Singleton):
 
         params = {"userID": self.user_id}
         url = self.base_url + "/api/getUsername"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -924,7 +973,7 @@ class Client(metaclass=Singleton):
             else sort_type
         }
         url = self.base_url + "/api/getTopUsers"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -987,7 +1036,7 @@ class Client(metaclass=Singleton):
         """
         parameters = {"countContributingUsers": count_contributing_users}
         url = self.base_url + "/api/getTotalStats"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1026,7 +1075,7 @@ class Client(metaclass=Singleton):
         132654.20
         """
         url = self.base_url + "/api/getDaysSavedFormatted"
-        response = self.session.get(url)
+        response = self._request("get", url)
 
         try:
             data = json.loads(response.text)
@@ -1115,7 +1164,7 @@ class Client(metaclass=Singleton):
             ]
         }
         url = self.base_url + "/api/segmentInfo"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1177,7 +1226,7 @@ class Client(metaclass=Singleton):
         if action_types:
             parameters["actionTypes"] = json.dumps(action_types)
         url = self.base_url + "/api/lockCategories"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1247,7 +1296,7 @@ class Client(metaclass=Singleton):
         url = self.base_url + "/api/lockCategories/" + (
             video_hash or sha256(video_id.encode("utf-8")).hexdigest()[: self.hash_length]
         )
-        response = self.session.get(url)
+        response = self._request("get", url)
 
         try:
             data = json.loads(response.text)
@@ -1328,7 +1377,7 @@ class Client(metaclass=Singleton):
         if action_types:
             parameters["actionTypes"] = json.dumps(action_types)
         url = self.base_url + "/api/lockReason"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1399,7 +1448,7 @@ class Client(metaclass=Singleton):
         if action_types:
             body["actionTypes"] = action_types
         url = self.base_url + "/api/lockCategories"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def unlock_categories(self, video_id: str, categories: List[str]) -> None:
@@ -1446,7 +1495,7 @@ class Client(metaclass=Singleton):
             "categories": categories,
         }
         url = self.base_url + "/api/lockCategories"
-        response = self.session.delete(url, json=body)
+        response = self._request("delete", url, json=body)
         raise_request_exception(response)
 
     @cache(ttl=300)  # 5 minutes
@@ -1570,7 +1619,7 @@ class Client(metaclass=Singleton):
         if not ignored:
             parameters["ignored"] = "false"
         url = self.base_url + "/api/searchSegments"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)
@@ -1621,7 +1670,7 @@ class Client(metaclass=Singleton):
         46
         """
         url = self.base_url + "/api/status" + (f"/{value}" if value else "")
-        response = self.session.get(url)
+        response = self._request("get", url)
 
         try:
             data = json.loads(response.text)
@@ -1664,7 +1713,7 @@ class Client(metaclass=Singleton):
         """
         params = {"userID": self.user_id}
         url = self.base_url + "/api/isUserVIP"
-        response = self.session.get(url, params=params)
+        response = self._request("get", url, params=params)
 
         try:
             data = json.loads(response.text)
@@ -1727,7 +1776,7 @@ class Client(metaclass=Singleton):
         if categories:
             parameters["categories"] = json.dumps(categories)
         url = self.base_url + "/api/shadowBanUser"
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     def warn_user(
@@ -1768,7 +1817,7 @@ class Client(metaclass=Singleton):
             "enabled": enabled,
         }
         url = self.base_url + "/api/warnUser"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def clear_cache(self, video_id: str) -> None:
@@ -1803,7 +1852,7 @@ class Client(metaclass=Singleton):
             video_id = video_id_match.group(5)
         body = {"userID": self.user_id, "videoID": video_id}
         url = self.base_url + "/api/clearCache"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def purge_all_segments(self, video_id: str, *, service: str = "YouTube") -> None:
@@ -1840,7 +1889,7 @@ class Client(metaclass=Singleton):
             video_id = video_id_match.group(5)
         body = {"userID": self.user_id, "videoID": video_id, "service": service}
         url = self.base_url + "/api/purgeAllSegments"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def segment_shift(
@@ -1886,7 +1935,7 @@ class Client(metaclass=Singleton):
             "endTime": end_time,
         }
         url = self.base_url + "/api/segmentShift"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def add_user_as_temp_vip(
@@ -1937,7 +1986,7 @@ class Client(metaclass=Singleton):
             "enabled": "true" if enabled else "false",
         }
         url = self.base_url + "/api/addUserAsTempVIP"
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     def set_user_feature(
@@ -1980,7 +2029,7 @@ class Client(metaclass=Singleton):
             "enabled": enabled,
         }
         url = self.base_url + "/api/feature"
-        response = self.session.post(url, json=body)
+        response = self._request("post", url, json=body)
         raise_request_exception(response)
 
     def add_user_as_vip(self, public_userid: str, *, enabled: bool = True) -> None:
@@ -2014,7 +2063,7 @@ class Client(metaclass=Singleton):
             "enabled": "true" if enabled else "false",
         }
         url = self.base_url + "/api/addUserAsVIP"
-        response = self.session.post(url, params=parameters)
+        response = self._request("post", url, params=parameters)
         raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
@@ -2060,7 +2109,7 @@ class Client(metaclass=Singleton):
         """
         parameters = {"username": user_name, "exact": exact}
         url = self.base_url + "/api/userID"
-        response = self.session.get(url, params=parameters)
+        response = self._request("get", url, params=parameters)
 
         try:
             data = json.loads(response.text)

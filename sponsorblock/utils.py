@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 import platform
 import re
@@ -96,7 +97,7 @@ def set_env_var(key: str, value: str):
     -------
     Most of the time this shouldn't be used manually, but it's here in case you need to set the SPONSORBLOCK_USER_ID environment variable.
     """
-    print("Setting SPONSORBLOCK_USER_ID environment variable")
+    logging.getLogger(__name__).info("Setting %s environment variable", key)
     operating_system = platform.system()
     if operating_system == "Windows":
         os.system(f'setx {key} "{value}" ')

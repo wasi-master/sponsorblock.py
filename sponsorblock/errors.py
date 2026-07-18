@@ -1,5 +1,17 @@
 from requests import Response
 
+class ConnectionException(Exception):
+    """Raised when a connection to the server could not be established,
+    for example when there is no internet connection or the server timed out.
+
+    The original requests exception is available as the ``original`` attribute.
+    """
+
+    def __init__(self, message, original=None):
+        self.original = original
+        super().__init__(message)
+
+
 class InvalidJSONException(Exception):
     """Raised when the JSON gotten from the server is invalid"""
 

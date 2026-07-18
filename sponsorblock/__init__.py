@@ -2,6 +2,7 @@
 from .client import Client
 from .errors import (
     BadRequest,
+    ConnectionException,
     DuplicateException,
     Forbidden,
     HTTPException,
