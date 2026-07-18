@@ -1,3 +1,4 @@
+import functools
 import os
 import platform
 import re
@@ -90,6 +91,7 @@ def cache(**kwargs):
         except AttributeError:
             function.cache = {}
 
+        @functools.wraps(function)
         def wrapper(*args):
             # if nothing valid in cache, insert something
             if (
