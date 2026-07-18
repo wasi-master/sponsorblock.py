@@ -334,10 +334,24 @@ class SegmentInfo:
         The service of the segment
     video_duration : float
         The duration of the video
+    hidden : int
+        Whether the segment is hidden (2 downvotes or downvoted by a VIP)
+    reputation : int
+        The reputation of the submitter at the time of submission
+    shadow_hidden : int
+        Whether the submitter is shadowbanned
     hashed_video_id : str
         The hashed video id of the video
     user_agent : str
         The user agent of the segment
+    description : str
+        The chapter title for chapter segments, an empty string for other segments
+
+    Note
+    ----
+    Some attributes can be None when the segment info came from
+    :meth:`sponsorblock.client.Client.search_segments`, since that endpoint
+    returns fewer fields.
 
     Warning
     -------
@@ -345,32 +359,39 @@ class SegmentInfo:
     """
 
     def __init__(self, data):
-        self.video_id = data["videoID"]
+        self.video_id = data.get("videoID")
         self.start_time = data["startTime"]
         self.end_time = data["endTime"]
         self.votes = data["votes"]
         self.locked = data["locked"]
         self.uuid = data["UUID"]
         self.user_id = data["userID"]
-        self.time_submitted = datetime.fromtimestamp(data["timeSubmitted"] / 1000)
+        time_submitted = data.get("timeSubmitted")
+        self.time_submitted = (
+            datetime.fromtimestamp(time_submitted / 1000)
+            if time_submitted is not None
+            else None
+        )
         self.views = data["views"]
         self.category = data["category"]
-        self.service = data["service"]
-        self.video_duration = data["videoDuration"]
-        self.hidden = data["hidden"]
-        self.reputation = data["reputation"]
-        self.shadow_hidden = data["shadowHidden"]
-        self.hashed_video_id = data["hashedVideoID"]
-        self.user_agent = data["userAgent"]
+        self.action_type = data.get("actionType")
+        self.service = data.get("service")
+        self.video_duration = data.get("videoDuration")
+        self.hidden = data.get("hidden")
+        self.reputation = data.get("reputation")
+        self.shadow_hidden = data.get("shadowHidden")
+        self.hashed_video_id = data.get("hashedVideoID")
+        self.user_agent = data.get("userAgent")
+        self.description = data.get("description")
 
     def __repr__(self):
         return (
             f"SegmentInfo(video_id={self.video_id}, start_time={self.start_time}, "
             f"end_time={self.end_time}, votes={self.votes}, locked={self.locked}, "
             f"uuid={self.uuid}, user_id={self.user_id}, time_submitted={self.time_submitted}, "
-            f"views={self.views}, category={self.category}, service={self.service}, "
-            f"video_duration={self.video_duration}, hashed_video_id={self.hashed_video_id}, "
-            f"user_agent={self.user_agent})"
+            f"views={self.views}, category={self.category}, action_type={self.action_type}, "
+            f"service={self.service}, video_duration={self.video_duration}, "
+            f"hashed_video_id={self.hashed_video_id}, user_agent={self.user_agent})"
         )
 
 
@@ -492,6 +513,35 @@ class ServerStatus:
             f"ServerStatus(uptime={self.uptime}, commit={self.commit}, db={self.db}, "
             f"start_time={self.start_time}, process_time={self.process_time}, "
             f"load_average={self.load_average}, hostname={self.hostname})"
+        )
+
+
+class SegmentSearchResults:
+    """The results of a segment search
+
+    Attributes
+    ----------
+    segment_count : int
+        The total number of segments matching the query
+    page : int
+        The page number of these results
+    segments : List[SegmentInfo]
+        The segments on this page, at most 10
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
+    """
+
+    def __init__(self, data: dict):
+        self.segment_count = data["segmentCount"]
+        self.page = data["page"]
+        self.segments = [SegmentInfo(segment) for segment in data["segments"]]
+
+    def __repr__(self):
+        return (
+            f"SegmentSearchResults(segment_count={self.segment_count}, "
+            f"page={self.page}, segments={self.segments})"
         )
 
 

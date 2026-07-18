@@ -25,6 +25,7 @@ from .models import (
     ServerStatus,
     Segment,
     SegmentInfo,
+    SegmentSearchResults,
     TopUser,
     TotalStats,
     User,
@@ -1441,6 +1442,140 @@ class Client(metaclass=Singleton):
         url = self.base_url + "/api/lockCategories"
         response = self.session.delete(url, json=body)
         raise_request_exception(response)
+
+    @cache(ttl=300)  # 5 minutes
+    def search_segments(
+        self,
+        video_id: str,
+        *,
+        category: Category = None,
+        categories: List[str] = None,
+        action_type: ActionType = None,
+        action_types: List[str] = None,
+        service: str = "YouTube",
+        page: int = 0,
+        min_votes: int = None,
+        max_votes: int = None,
+        min_views: int = None,
+        max_views: int = None,
+        locked: bool = True,
+        hidden: bool = True,
+        ignored: bool = True,
+    ) -> SegmentSearchResults:
+        """Searches all segments of a video based on the specified filters.
+
+        Note
+        ----
+        This should not be used to know which segments to skip, since the vote and view
+        thresholds that determine the best segments change over time. Use
+        :meth:`get_skip_segments` for that.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to search the segments of, can be a video url too.
+        category : str, optional
+            A category to search segments for. See https://wiki.sponsor.ajay.app/w/Types
+        categories : List[str], optional
+            A list of categories to search segments for.
+        action_type : str, optional
+            An action type to search segments for.
+        action_types : List[str], optional
+            A list of action types to search segments for.
+        service : str, optional
+            The service to use, default is 'YouTube'.
+        page : int, optional
+            The page of results to get (10 segments per page), by default 0.
+        min_votes : int, optional
+            Only return segments with at least this many votes.
+        max_votes : int, optional
+            Only return segments with at most this many votes.
+        min_views : int, optional
+            Only return segments with at least this many views.
+        max_views : int, optional
+            Only return segments with at most this many views.
+        locked : bool, optional
+            Whether to include locked segments, by default True.
+        hidden : bool, optional
+            Whether to include hidden segments, by default True.
+        ignored : bool, optional
+            Whether to include ignored segments (hidden or below the vote threshold), by default True.
+
+        Returns
+        -------
+        SegmentSearchResults
+            The total segment count, the page number, and up to 10 segments.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        NotFoundException
+            The server returned a 404 error, most likely because there are no matching segments
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 404, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> results = client.search_segments("kJQP7kiw5Fk", min_votes=0)
+        >>> results.segment_count
+        16
+        >>> results.segments[0].category
+        'music_offtopic'
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        if category:
+            categories = [category]
+        if action_type:
+            action_types = [action_type]
+        parameters = {
+            "videoID": video_id,
+            "service": service,
+            "page": page,
+        }
+        if categories:
+            parameters["categories"] = json.dumps(categories)
+        if action_types:
+            parameters["actionTypes"] = json.dumps(action_types)
+        if min_votes is not None:
+            parameters["minVotes"] = min_votes
+        if max_votes is not None:
+            parameters["maxVotes"] = max_votes
+        if min_views is not None:
+            parameters["minViews"] = min_views
+        if max_views is not None:
+            parameters["maxViews"] = max_views
+        if not locked:
+            parameters["locked"] = "false"
+        if not hidden:
+            parameters["hidden"] = "false"
+        if not ignored:
+            parameters["ignored"] = "false"
+        url = self.base_url + "/api/searchSegments"
+        response = self.session.get(url, params=parameters)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return SegmentSearchResults(data)
+        finally:
+            raise_request_exception(response)
 
     def get_status(self, value: str = None) -> Union[ServerStatus, int, str, list]:
         """Gets the status of the sponsorblock server.
