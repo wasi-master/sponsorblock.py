@@ -57,6 +57,18 @@ ActionType = Literal[
 ]
 __version__ = "0.2.1"
 
+class UserFeature(Enum):
+    """Features that can be granted to a user by a VIP.
+
+    See Also
+    --------
+    sponsorblock.client.Client.set_user_feature : Should be used with the UserFeature
+    """
+
+    CHAPTERS = 0
+    DEARROW_TITLE_SUBMITTER = 2
+
+
 class SortType(Enum):
     """0 for by minutes saved, 1 for by view count, 2 for by total submissions
 

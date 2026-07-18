@@ -37,6 +37,7 @@ from .utils import (
     ActionType,
     Category,
     SortType,
+    UserFeature,
     set_env_var,
     cache,
     Singleton,
@@ -1629,6 +1630,387 @@ class Client(metaclass=Singleton):
             return ServerStatus(data)
         finally:
             raise_request_exception(response)
+
+    def is_user_vip(self) -> bool:
+        """Checks whether the current user is a VIP.
+
+        Returns
+        -------
+        bool
+            Whether the current user is a VIP.
+
+        Raises
+        ------
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client("your local user id")
+        >>> client.is_user_vip()
+        False
+        """
+        params = {"userID": self.user_id}
+        url = self.base_url + "/api/isUserVIP"
+        response = self.session.get(url, params=params)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return bool(data["vip"])
+        finally:
+            raise_request_exception(response)
+
+    def shadow_ban_user(
+        self,
+        public_userid: str,
+        *,
+        enabled: bool = True,
+        unhide_old_submissions: bool = None,
+        categories: List[str] = None,
+    ) -> None:
+        """Shadow bans or unbans a user, hiding all their future submissions from everyone else.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        public_userid : str
+            The public user id of the user to shadow ban.
+        enabled : bool, optional
+            True to ban, False to unban, by default True.
+        unhide_old_submissions : bool, optional
+            Whether all previous submissions should be (un)hidden as well.
+        categories : List[str], optional
+            The categories to (un)hide, defaults to all categories on the server.
+
+        Raises
+        ------
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        DuplicateException
+            The server returned a 409 error, because the user is already shadowbanned
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        parameters = {
+            "userID": public_userid,
+            "adminUserID": self.user_id,
+            "enabled": "true" if enabled else "false",
+        }
+        if unhide_old_submissions is not None:
+            parameters["unHideOldSubmissions"] = (
+                "true" if unhide_old_submissions else "false"
+            )
+        if categories:
+            parameters["categories"] = json.dumps(categories)
+        url = self.base_url + "/api/shadowBanUser"
+        response = self.session.post(url, params=parameters)
+        raise_request_exception(response)
+
+    def warn_user(
+        self, public_userid: str, *, reason: str = "", enabled: bool = True
+    ) -> None:
+        """Warns a user, temporarily banning them and showing them a warning message.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        public_userid : str
+            The public user id of the user to warn.
+        reason : str, optional
+            The reason for the warning.
+        enabled : bool, optional
+            True to warn, False to remove the warning, by default True.
+
+        Raises
+        ------
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        DuplicateException
+            The server returned a 409 error, because the user is already warned
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        body = {
+            "issuerUserID": self.user_id,
+            "userID": public_userid,
+            "reason": reason,
+            "enabled": enabled,
+        }
+        url = self.base_url + "/api/warnUser"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def clear_cache(self, video_id: str) -> None:
+        """Clears the server's redis cache for a video.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to clear the cache for, can be a video url too.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        body = {"userID": self.user_id, "videoID": video_id}
+        url = self.base_url + "/api/clearCache"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def purge_all_segments(self, video_id: str, *, service: str = "YouTube") -> None:
+        """Hides all segments on a video without affecting the submitters' reputations.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to purge the segments of, can be a video url too.
+        service : str, optional
+            The service of the video, default is 'YouTube'.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        body = {"userID": self.user_id, "videoID": video_id, "service": service}
+        url = self.base_url + "/api/purgeAllSegments"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def segment_shift(
+        self, video_id: str, start_time: float, end_time: float
+    ) -> None:
+        """Shifts all segments on a video.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to shift the segments of, can be a video url too.
+        start_time : float
+            The start time of the shift.
+        end_time : float
+            The end time of the shift.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        body = {
+            "videoID": video_id,
+            "userID": self.user_id,
+            "startTime": start_time,
+            "endTime": end_time,
+        }
+        url = self.base_url + "/api/segmentShift"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def add_user_as_temp_vip(
+        self, public_userid: str, channel_video_id: str, *, enabled: bool = True
+    ) -> None:
+        """Grants a user temporary (24 hour) VIP status on a channel.
+
+        Note
+        ----
+        This can only be used by VIP users. A user can only be a temporary VIP of one
+        channel at a time, the most recent channel takes precedence.
+
+        Parameters
+        ----------
+        public_userid : str
+            The public user id of the user to grant temporary VIP status to.
+        channel_video_id : str
+            The id of a video of the channel to grant VIP status on, can be a video url too.
+        enabled : bool, optional
+            True to grant, False to revoke, by default True.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        NotFoundException
+            The server returned a 404 error, because no channel was found for the video id
+        DuplicateException
+            The server returned a 409 error, because the user is already a permanent VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        if len(channel_video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(channel_video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            channel_video_id = video_id_match.group(5)
+        parameters = {
+            "userID": public_userid,
+            "adminUserID": self.user_id,
+            "channelVideoID": channel_video_id,
+            "enabled": "true" if enabled else "false",
+        }
+        url = self.base_url + "/api/addUserAsTempVIP"
+        response = self.session.post(url, params=parameters)
+        raise_request_exception(response)
+
+    def set_user_feature(
+        self,
+        public_userid: str,
+        feature: Union[UserFeature, int],
+        *,
+        enabled: bool = True,
+    ) -> None:
+        """Adds or removes a feature for a user.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        public_userid : str
+            The public user id of the user to change the features of.
+        feature : Union[UserFeature, int]
+            The feature to add or remove, can be a UserFeature or the raw feature number.
+        enabled : bool, optional
+            True to add the feature, False to remove it, by default True.
+
+        Raises
+        ------
+        BadRequest
+            The server returned a 400 error, most likely because the feature does not exist
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        body = {
+            "userID": public_userid,
+            "adminUserID": self.user_id,
+            "feature": feature.value if isinstance(feature, UserFeature) else feature,
+            "enabled": enabled,
+        }
+        url = self.base_url + "/api/feature"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def add_user_as_vip(self, public_userid: str, *, enabled: bool = True) -> None:
+        """Adds or removes a user from the VIP list.
+
+        Note
+        ----
+        This can only be used by the server administrator.
+
+        Parameters
+        ----------
+        public_userid : str
+            The public user id of the user to add to the VIP list.
+        enabled : bool, optional
+            True to add the user, False to remove them, by default True.
+
+        Raises
+        ------
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not the administrator
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response code that is not handled
+        """
+        parameters = {
+            "userID": public_userid,
+            "adminUserID": self.user_id,
+            "enabled": "true" if enabled else "false",
+        }
+        url = self.base_url + "/api/addUserAsVIP"
+        response = self.session.post(url, params=parameters)
+        raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
     def search_for_user(
