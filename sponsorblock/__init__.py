@@ -28,4 +28,4 @@ from .models import (
 from .utils import SortType, UserFeature
 
 __name__ = "sponsorblock.py"  # noqa
-__version__ = "0.2.3"
+__version__ = "1.0.0"

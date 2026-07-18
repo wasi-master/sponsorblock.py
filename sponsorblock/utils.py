@@ -56,7 +56,7 @@ ActionType = Literal[
     "poi",
     "chapter",
 ]
-__version__ = "0.2.1"
+__version__ = "1.0.0"
 
 class UserFeature(Enum):
     """Features that can be granted to a user by a VIP.
