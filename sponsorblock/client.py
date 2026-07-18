@@ -19,6 +19,8 @@ from .errors import (
     UnexpectedException,
 )
 from .models import (
+    LockReason,
+    LockedCategories,
     SearchedUser,
     Segment,
     SegmentInfo,
@@ -1117,6 +1119,327 @@ class Client(metaclass=Singleton):
             return [SegmentInfo(segment_info) for segment_info in data]
         finally:
             raise_request_exception(response)
+
+    @cache(ttl=300)  # 5 minutes
+    def get_locked_categories(
+        self, video_id: str, *, action_types: List[str] = None
+    ) -> LockedCategories:
+        """Gets the locked categories for a video.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to get the locked categories for, can be a video url too.
+        action_types : List[str], optional
+            The action types to get locks for, defaults to ``["skip", "mute"]`` on the server.
+
+        Returns
+        -------
+        LockedCategories
+            The locked categories for the video, along with the most recent lock reason.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        NotFoundException
+            The server returned a 404 error, most likely because the video has no locked categories
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 404, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> client.get_locked_categories("kJQP7kiw5Fk")
+        LockedCategories(categories=['music_offtopic'], reason=..., action_types=['skip', 'mute'], video_id=None)
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        parameters = {"videoID": video_id}
+        if action_types:
+            parameters["actionTypes"] = json.dumps(action_types)
+        url = self.base_url + "/api/lockCategories"
+        response = self.session.get(url, params=parameters)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return LockedCategories(data)
+        finally:
+            raise_request_exception(response)
+
+    @cache(ttl=300)  # 5 minutes
+    def get_locked_categories_with_hash(
+        self, video_id: str, video_hash: str = None
+    ) -> LockedCategories:
+        """Gets the locked categories for a video using a K-Anonymity system.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to get the locked categories for, can be a video url too.
+        video_hash : str, optional
+            The sha256 hash prefix of the video id, if not given it is generated from the
+            video id using the client's hashed_video_id_length. Must be between 4 and 32 characters.
+
+        Returns
+        -------
+        LockedCategories
+            The locked categories for the video, along with the video id, full hash and lock reason.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        TypeError
+            The video hash length is not between 4 and 32
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server did not return a lock for the requested video
+        NotFoundException
+            The server returned a 404 error, most likely because the video has no locked categories
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 404, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> client.get_locked_categories_with_hash("kJQP7kiw5Fk")
+        LockedCategories(categories=['music_offtopic'], reason=..., action_types=None, video_id=kJQP7kiw5Fk)
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        if video_hash and not 4 <= len(video_hash) <= 32:
+            raise TypeError(
+                "Video hash length wrong. must be between 4 and 32, got {}".format(
+                    len(video_hash)
+                )
+            )
+        url = self.base_url + "/api/lockCategories/" + (
+            video_hash or sha256(video_id.encode("utf-8")).hexdigest()[: self.hash_length]
+        )
+        response = self.session.get(url)
+
+        try:
+            data = json.loads(response.text)
+            for video in data:
+                if video["videoID"] == video_id:
+                    data = video
+                    break
+            else:
+                raise BadRequest(
+                    "No lock returned from server with the specified hash", response
+                )
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return LockedCategories(data)
+        finally:
+            raise_request_exception(response)
+
+    @cache(ttl=300)  # 5 minutes
+    def get_lock_reason(
+        self,
+        video_id: str,
+        *,
+        category: Category = None,
+        categories: List[str] = None,
+        action_types: List[str] = None,
+    ) -> List[LockReason]:
+        """Gets the lock reasons for the categories of a video.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to get the lock reasons for, can be a video url too.
+        category : str, optional
+            A single category to get the lock reason for, defaults to all categories.
+        categories : List[str], optional
+            The categories to get the lock reasons for, defaults to all categories.
+        action_types : List[str], optional
+            The action types to get lock reasons for.
+
+        Returns
+        -------
+        List[LockReason]
+            The lock status and reason for each requested category.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        InvalidJSONException
+            The server returned invalid JSON
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client()
+        >>> client.get_lock_reason("kJQP7kiw5Fk", category="music_offtopic")
+        [LockReason(category=music_offtopic, locked=1, reason=..., user_id=..., user_name=...)]
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        if category:
+            categories = [category]
+        parameters = {"videoID": video_id}
+        if categories:
+            parameters["categories"] = json.dumps(categories)
+        if action_types:
+            parameters["actionTypes"] = json.dumps(action_types)
+        url = self.base_url + "/api/lockReason"
+        response = self.session.get(url, params=parameters)
+
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as exc:
+            raise InvalidJSONException(
+                "The server returned invalid JSON", response
+            ) from exc
+        else:
+            return [LockReason(d) for d in data]
+        finally:
+            raise_request_exception(response)
+
+    def lock_categories(
+        self,
+        video_id: str,
+        categories: List[str],
+        *,
+        reason: str = "",
+        action_types: List[str] = None,
+    ) -> None:
+        """Locks categories on a video, disallowing further submissions for those categories.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to lock categories on, can be a video url too.
+        categories : List[str]
+            The categories to lock.
+        reason : str, optional
+            The reason for the lock, by default an empty string.
+        action_types : List[str], optional
+            The action types the lock applies to.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 403, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client("your local vip user id")
+        >>> client.lock_categories("kJQP7kiw5Fk", ["sponsor"], reason="Spam submissions")
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        body = {
+            "videoID": video_id,
+            "userID": self.user_id,
+            "categories": categories,
+            "reason": reason,
+        }
+        if action_types:
+            body["actionTypes"] = action_types
+        url = self.base_url + "/api/lockCategories"
+        response = self.session.post(url, json=body)
+        raise_request_exception(response)
+
+    def unlock_categories(self, video_id: str, categories: List[str]) -> None:
+        """Removes category locks on a video.
+
+        Note
+        ----
+        This can only be used by VIP users.
+
+        Parameters
+        ----------
+        video_id : str
+            The id of the video to unlock categories on, can be a video url too.
+        categories : List[str]
+            The categories to unlock.
+
+        Raises
+        ------
+        ValueError
+            The video id is invalid
+        BadRequest
+            The server returned a 400 error, most likely because your inputs are wrong/impossible
+        Forbidden
+            The server returned a 403 error, most likely because you are not a VIP
+        ServerException
+            The server returned a 500 error, most likely because the server is down
+        UnexpectedException
+            The server returned a response that was not 200, 400, 403, or 500
+
+        Examples
+        --------
+        >>> import sponsorblock as sb
+        >>> client = sb.Client("your local vip user id")
+        >>> client.unlock_categories("kJQP7kiw5Fk", ["sponsor"])
+        """
+        if len(video_id) != 11:
+            video_id_match = VIDEO_ID_REGEX.match(video_id)
+            if not video_id_match:
+                raise ValueError("Invalid video id")
+            video_id = video_id_match.group(5)
+        body = {
+            "videoID": video_id,
+            "userID": self.user_id,
+            "categories": categories,
+        }
+        url = self.base_url + "/api/lockCategories"
+        response = self.session.delete(url, json=body)
+        raise_request_exception(response)
 
     @cache(max_entries=300)  # 5 minutes
     def search_for_user(

@@ -374,6 +374,76 @@ class SegmentInfo:
         )
 
 
+class LockedCategories:
+    """The locked categories of a video
+
+    Attributes
+    ----------
+    categories : List[str]
+        The categories that are locked for the video
+    reason : str
+        The reason for the lock, only the most recent reason is available
+    action_types : Optional[List[str]]
+        The action types the lock applies to, not available when gotten with a hash
+    video_id : Optional[str]
+        The id of the video, only available when gotten with a hash
+    hash : Optional[str]
+        The full hash of the video id, only available when gotten with a hash
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
+    """
+
+    def __init__(self, data: dict):
+        self.categories = data["categories"]
+        self.reason = data.get("reason", "")
+        self.action_types = data.get("actionTypes")
+        self.video_id = data.get("videoID")
+        self.hash = data.get("hash")
+
+    def __repr__(self):
+        return (
+            f"LockedCategories(categories={self.categories}, reason={self.reason}, "
+            f"action_types={self.action_types}, video_id={self.video_id})"
+        )
+
+
+class LockReason:
+    """The lock status and reason of a category on a video
+
+    Attributes
+    ----------
+    category : str
+        The category the lock applies to
+    locked : int
+        The status of the lock
+    reason : str
+        The reason for the lock
+    user_id : str
+        The public id of the VIP that locked the category
+    user_name : str
+        The username of the VIP that locked the category
+
+    Warning
+    -------
+    You should not make a instance of this yourself, this should only be created by the libray
+    """
+
+    def __init__(self, data: dict):
+        self.category = data["category"]
+        self.locked = data["locked"]
+        self.reason = data["reason"]
+        self.user_id = data["userID"]
+        self.user_name = data["userName"]
+
+    def __repr__(self):
+        return (
+            f"LockReason(category={self.category}, locked={self.locked}, "
+            f"reason={self.reason}, user_id={self.user_id}, user_name={self.user_name})"
+        )
+
+
 class SearchedUser:
     """A user gotten by searching for his name
 
